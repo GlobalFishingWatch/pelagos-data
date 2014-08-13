@@ -1,0 +1,10 @@
+[
+    {"type":"INTEGER","name":"mmsi"},
+    {"type":"FLOAT","name":"longitude"},
+    {"type":"FLOAT","name":"latitude"},
+    {"type":"TIMESTAMP","name":"timestamp"},
+    {"type":"FLOAT","name":"score"},
+    {"type":"STRING","name":"gridcode"},
+    {"type":"INTEGER","name":"interval"},
+    {"type":"INTEGER","name":"type"}
+]

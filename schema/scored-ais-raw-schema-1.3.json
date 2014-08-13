@@ -1,0 +1,12 @@
+[
+    {"type":"INTEGER","name":"mmsi"},
+    {"type":"FLOAT","name":"longitude"},
+    {"type":"FLOAT","name":"latitude"},
+    {"type":"INTEGER","name":"timestamp"},
+    {"type":"FLOAT","name":"score"},
+    {"type":"FLOAT","name":"navstat"},
+    {"type":"FLOAT","name":"hdg"},
+    {"type":"FLOAT","name":"rot"},
+    {"type":"FLOAT","name":"cog"},
+    {"type":"FLOAT","name":"sog"}
+]

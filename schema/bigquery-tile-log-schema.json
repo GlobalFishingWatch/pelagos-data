@@ -1,0 +1,14 @@
+[
+    {"name":"app_id", "type": "string", "mode": "required"},
+    {"name":"app_version", "type": "string", "mode": "required"},
+    {"name":"bbox", "type": "string", "mode": "required"},
+    {"name":"client_ip", "type": "string", "mode": "required"},
+    {"name":"gridcode", "type": "string", "mode": "required"},
+    {"name":"load_time", "type": "integer", "mode": "required"},
+    {"name":"size", "type": "integer", "mode": "required"},
+    {"name":"source", "type": "string", "mode": "required"},
+    {"name":"tileset", "type": "string", "mode": "required"},
+    {"name":"timestamp", "type": "timestamp", "mode": "required"},
+    {"name":"user_email", "type": "string", "mode": "required"},
+    {"name":"zoom_level", "type": "integer", "mode": "required"}
+]
