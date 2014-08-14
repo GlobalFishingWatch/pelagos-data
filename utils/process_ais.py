@@ -101,9 +101,7 @@ class Transform (object):
         return result
 
     def transform_file(self, infile, outfile):
-        dialect = csv.Sniffer().sniff(infile.read(1024), delimiters=',')
-        infile.seek(0)
-        reader = csv.DictReader(infile, dialect=dialect)
+        reader = csv.DictReader(infile)
         fieldnames = reader.fieldnames
         fieldnames.extend(['gridcode', 'interval', 'type', 'next_gridcode'])
         writer = csv.DictWriter(outfile, fieldnames, lineterminator='\n')
