@@ -4,14 +4,14 @@ echo "source /usr/local/share/google/google-cloud-sdk/path.bash.inc" >> /etc/pro
 echo "source /usr/local/share/google/google-cloud-sdk/completion.bash.inc" >> /etc/profile
 
 sudo apt-get update
+sudo apt-get install gcc python-dev python-setuptools -y
 sudo apt-get install git -y
 sudo apt-get install python-pip -y
 sudo apt-get install zip unzip
 
-
-sudo pip install nose
-sudo pip install docopt
+sudo pip install -U crcmod
 
 cd /usr/local/src
 git clone https://github.com/SkyTruth/pelagos-data.git
+pip install -r ./pelagos-data/requirements.txt
 
