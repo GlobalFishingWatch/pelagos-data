@@ -12,6 +12,6 @@ sudo apt-get install zip unzip
 sudo pip install -U crcmod
 
 cd /usr/local/src
-git clone https://github.com/SkyTruth/pelagos-data.git
-pip install -r ./pelagos-data/requirements.txt
+sudo git clone https://github.com/SkyTruth/pelagos-data.git
+sudo pip install -r ./pelagos-data/requirements.txt
 

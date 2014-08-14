@@ -1,9 +1,11 @@
+#!/usr/bin/env python
 """Pelagos Model Transform.
 
 Usage:
-  model_transform.py INFILE OUTFILE [-q | -v]
-  model_transform.py (-h | --help)
-  model_transform.py --version
+  process_ais.py [INFILE [OUTFILE]] [-q | -v]
+  process_ais.py [-] [OUTFILE] [-q | -v]
+  process_ais.py (-h | --help)
+  process_ais.py --version
 
 Options:
   -h --help     Show this screen.
@@ -11,6 +13,7 @@ Options:
   -q --quiet    be quiet
   -v --verbose  yak yak yak
 """
+
 from docopt import docopt
 
 import logging
@@ -132,12 +135,10 @@ def main():
     infile_name = arguments['INFILE']
     outfile_name = arguments['OUTFILE']
 
-    # print '%s => %s' % (infile_name, outfile_name)
-
     #TODO: need error messaging for failures
 
-    with open(infile_name, 'rb') as csv_in:
-        with open(outfile_name, 'w') as csv_out:
+    with sys.stdin if infile_name is None or '-' == infile_name else open(infile_name, 'rb') as csv_in:
+        with sys.stdout if outfile_name is None or '-' == outfile_name else open(outfile_name, 'w') as csv_out:
             transform = Transform ()
             transform.transform_file(csv_in, csv_out)
             logging.info(transform.stats)
