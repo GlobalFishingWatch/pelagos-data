@@ -23,34 +23,37 @@ import logging
 import csv
 import sys
 import json
-from os.path import *
+from osgeo import ogr
 
-import putils
 
-def transform (arg):
-
-    points_in=arg['POINTS_IN']
-    points_out=arg['POINTS_OUT']
+def regionate (file_in, file_out, arg):
 
     # Open polygon layer for reading
     # Arguments are file path and layer name
     # Unfortunately a layer cannot exist without an open datasource so both objects must exist
-    poly_ds, poly_layer = putils.io.open_datasource(arg['POLY_LAYER'], basename(arg['POLY_LAYER']).split('.')[0])
+    # poly_ds, poly_layer = putils.io.open_datasource(arg['POLY_LAYER'], basename(arg['POLY_LAYER']).split('.')[0])
 
-    with sys.stdin if points_in is None or '-' == points_in else open(points_in, 'rb') as file_in:
-        with sys.stdout if points_out is None or '-' == points_out else open(points_out, 'w') as file_out:
-            reader = csv.DictReader(file_in)
-            fieldnames = reader.fieldnames
-            for row in reader:
-                regions = putils.classify.get_all_intersecting_attributes(row[arg['--xfield']],
-                                                                          row[arg['--yfield']],
-                                                                          poly_layer)
+    poly_ds = ogr.Open(arg['POLY_LAYER'], 0)
+    if poly_ds is None:
+        raise IOError('Unable to open %s' % arg['POLY_LAYER'])
+    layer = poly_ds.GetLayerByIndex(0)
 
-                regionids = [r.get(arg['--attribute']) for r in regions.values()]
-                row_out = row
-                row_out['region'] = regionids
-                file_out.write(json.dumps(row_out))
-                file_out.write('\n')
+    reader = csv.DictReader(file_in)
+    fieldnames = reader.fieldnames
+    for row in reader:
+        point = ogr.CreateGeometryFromWkt("POINT (%s %s)" % (row['longitude'], row['latitude']))
+        layer.SetSpatialFilter(point)
+        regionids = []
+        feature = layer.GetNextFeature()
+        while feature:
+            field_idx = feature.GetFieldIndex(arg['--attribute'])
+            if field_idx != -1 and feature.GetGeometryRef().Intersects(point):
+                regionids.append(feature.GetFieldAsString(field_idx))
+            feature = layer.GetNextFeature()
+        row_out = row
+        row_out['region'] = regionids
+        file_out.write(json.dumps(row_out, sort_keys=True))
+        file_out.write('\n')
 
 
 def main():
@@ -65,7 +68,12 @@ def main():
     logging.basicConfig(format='%(levelname)s: %(message)s', level=log_level)
 
     try:
-        transform(arguments)
+        points_in=arguments['POINTS_IN']
+        points_out=arguments['POINTS_OUT']
+
+        with sys.stdin if points_in is None or '-' == points_in else open(points_in, 'rb') as file_in:
+            with sys.stdout if points_out is None or '-' == points_out else open(points_out, 'w') as file_out:
+                regionate(file_in ,file_out, arguments)
     except (ValueError, IOError), e:
         logging.error(e)
         return 0
