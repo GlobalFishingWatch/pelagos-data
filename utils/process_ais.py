@@ -75,7 +75,9 @@ class Transform (object):
         row['gridcode'] = str(TileBounds.from_point(lon=lon, lat=lat, zoom_level=MAX_ZOOM))
 
         # normalize score in range 0.0 - 1.0
-        row['score'] = (score - MIN_SCORE) / (MAX_SCORE - MIN_SCORE)
+        row['score'] = round(((score - MIN_SCORE) / (MAX_SCORE - MIN_SCORE)),6)
+        row['longitude'] = round(lon,6)
+        row['latitude'] = round(lat,6)
 
         row['timestamp'] = int(row['timestamp'])
 
