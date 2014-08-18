@@ -8,7 +8,7 @@ sudo apt-get install gcc python-dev python-setuptools -y
 sudo apt-get install git -y
 sudo apt-get install python-pip -y
 sudo apt-get install zip unzip
-sudo apt-get install python-gdal
+sudo apt-get install python-gdal -y
 
 sudo pip install -U crcmod
 
