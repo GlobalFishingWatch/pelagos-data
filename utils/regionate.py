@@ -74,15 +74,18 @@ def regionate (file_in, file_out, arg):
     # so at least this works....
 
     layer = None
-    for i in range(0,poly_ds.GetLayerCount()):
-        # only use the first usable layer
-
-        layer = poly_ds.GetLayerByIndex(i)
-        if arg['--layername']:
-            if layer.GetName() == arg['--layername']:
+    layer_name = arg['--layername']
+    if layer_name:
+        for i in range(0,poly_ds.GetLayerCount()):
+            lyr = poly_ds.GetLayerByIndex(i)
+            if lyr.GetName() == arg['--layername']:
+                layer = lyr
                 break
-        else:
-            if layer.GetGeomType() in (3,6):
+    else:
+        for i in range(0,poly_ds.GetLayerCount()):
+            lyr = poly_ds.GetLayerByIndex(i)
+            if lyr.GetGeomType() in (3,6):
+                layer = lyr
                 break
 
     if layer is None:
