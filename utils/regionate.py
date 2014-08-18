@@ -9,6 +9,7 @@ Usage:
 
 Options:
   --attribute=ATTRIB   Attribute in the polygon layer containing the regionid [default: regionid]
+  --layername=LAYERNAME   Name of the polygon layer to use.  Default is to use the first layer found
   --xfield=XFIELD      Name of input field containing x value [default: longitude]
   --yfield=YFIELD      Name of input field containing x value [default: latitude]
   -h --help     Show this screen.
@@ -26,6 +27,37 @@ import json
 from osgeo import ogr
 
 
+# def load_layer(file_name, layer_name=None):
+#     poly_ds = ogr.Open(file_name, 0)
+#     if poly_ds is None:
+#         raise IOError('Unable to open %s' % file_name)
+#
+#     # if layer_name:
+#     #     print file_name, layer_name
+#     #     layer = poly_ds.GetLayerByName('ocean2')
+#     #     if layer:
+#     #         return layer
+#     #     else:
+#     #         raise IOError('Layer %s not found in %s' % (layer_name, file_name))
+#
+#     # get all layers that are polyon (3) or multipolygon(6)
+#     for i in range(0,poly_ds.GetLayerCount()):
+#         # only use the first usable layer
+#
+#         layer = poly_ds.GetLayerByIndex(i)
+#         if layer_name:
+#             if layer.GetName() == layer_name:
+#                 return layer
+#         else:
+#             if layer.GetGeomType() in (3,6):
+#                 return layer
+#
+#     if layer_name:
+#         raise IOError('Layer %s not found in %s' % (layer_name, file_name))
+#     else:
+#         raise IOError('No Polygon layers found in %s' % file_name)
+
+
 def regionate (file_in, file_out, arg):
 
     # Open polygon layer for reading
@@ -36,13 +68,28 @@ def regionate (file_in, file_out, arg):
     poly_ds = ogr.Open(arg['POLY_LAYER'], 0)
     if poly_ds is None:
         raise IOError('Unable to open %s' % arg['POLY_LAYER'])
-    # get all layers that are polyon (3) or multipolygon(6)
-    layers = [poly_ds.GetLayerByIndex(i) for i in range(0,poly_ds.GetLayerCount())
-            if poly_ds.GetLayerByIndex(i).GetGeomType() in (3,6)]
 
-    if not layers:
-        raise IOError('No Polygon layers found in %s' % arg['POLY_LAYER'])
-    layer = layers[0]   # only use the first usable layer
+    # TODO: CLEANUP. Ok, so this is a mess here.  I tried to wrap it in a function load_layer() but i kept
+    # getting SEGFAULT errors when I made a call on the layer after it was returned
+    # so at least this works....
+
+    layer = None
+    for i in range(0,poly_ds.GetLayerCount()):
+        # only use the first usable layer
+
+        layer = poly_ds.GetLayerByIndex(i)
+        if arg['--layername']:
+            if layer.GetName() == arg['--layername']:
+                break
+        else:
+            if layer.GetGeomType() in (3,6):
+                break
+
+    if layer is None:
+        if arg['--layername']:
+            raise IOError('Layer %s not found in %s' % (arg['--layername'], arg['POLY_LAYER']))
+        else:
+            raise IOError('No Polygon layers found in %s' % arg['POLY_LAYER'])
 
     reader = csv.DictReader(file_in)
     fieldnames = reader.fieldnames

@@ -21,7 +21,8 @@ class RegionateTest(unittest2.TestCase):
         actual_output = StringIO.StringIO()
         expected_output = self._open_fixture('regionate_output_pipa.json')
         args={'POLY_LAYER': self._get_fixture_path('pipa/pipa.shp'),
-              '--attribute':'regionid'}
+              '--attribute':'regionid',
+              '--layername': None}
         regionate.regionate(csv_in, actual_output, args)
         actual_output.seek(0)
         for expected in expected_output:
@@ -33,7 +34,8 @@ class RegionateTest(unittest2.TestCase):
         actual_output = StringIO.StringIO()
         expected_output = self._open_fixture('regionate_output_ocean.json')
         args={'POLY_LAYER': self._get_fixture_path('ocean-region-10km.sqlite'),
-              '--attribute':'regionid'}
+              '--attribute': 'regionid',
+              '--layername': 'ocean2'}
         regionate.regionate(csv_in, actual_output, args)
         actual_output.seek(0)
         for expected in expected_output:
