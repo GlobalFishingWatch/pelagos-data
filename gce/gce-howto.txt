@@ -2,7 +2,7 @@
 ### Setup new CGE Instance with local startup script
 gcutil addinstance pelagos-dev1 \
    --machine_type=n1-standard-1 \
-   --image=https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/debian-7-wheezy-v20140718 \
+   --image=https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/debian-7-wheezy-v20140807 \
    --service_account_scope=https://www.googleapis.com/auth/devstorage.full_control,https://www.googleapis.com/auth/bigquery \
    --metadata_from_file=startup-script:gce-startup.sh
 
