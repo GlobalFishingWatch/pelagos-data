@@ -36,7 +36,13 @@ def regionate (file_in, file_out, arg):
     poly_ds = ogr.Open(arg['POLY_LAYER'], 0)
     if poly_ds is None:
         raise IOError('Unable to open %s' % arg['POLY_LAYER'])
-    layer = poly_ds.GetLayerByIndex(0)
+    # get all layers that are polyon (3) or multipolygon(6)
+    layers = [poly_ds.GetLayerByIndex(i) for i in range(0,poly_ds.GetLayerCount())
+            if poly_ds.GetLayerByIndex(i).GetGeomType() in (3,6)]
+
+    if not layers:
+        raise IOError('No Polygon layers found in %s' % arg['POLY_LAYER'])
+    layer = layers[0]   # only use the first usable layer
 
     reader = csv.DictReader(file_in)
     fieldnames = reader.fieldnames
