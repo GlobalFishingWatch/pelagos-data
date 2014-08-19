@@ -21,3 +21,8 @@ gunzip -c atw2_20k-processed.csv.gz |
     /usr/local/src/pelagos-data/utils/regionate.py
     --layername=ocean2 ocean-region-10km.sqlite |
     gzip -c  > atw2_20k-region.json.gz
+
+# load into bigquery
+bq load --source_format=NEWLINE_DELIMITED_JSON \
+    Scratch.atw2_20k_region_dev2 gs://analyze-data/processed/atw2_20k-region-dev2.json.gz \
+    /usr/local/src/pelagos-data/schema/scored-ais-processed-schema-1.4.json
