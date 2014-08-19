@@ -14,3 +14,10 @@ gsutil cp atw2_20k-processed.csv.gz gs://analyze-data/processed
 bq load --skip_leading_rows=1 --max_bad_records=100 \
     Global_20k_2012.processed_1_3 gs://analyze-data/processed/atw2_20k-processed.csv.gz \
     /usr/local/src/pelagos-data/schema/scored-ais-processed-schema-1.3.json
+
+
+# Regionate
+gunzip -c atw2_20k-processed.csv.gz |
+    /usr/local/src/pelagos-data/utils/regionate.py
+    --layername=ocean2 ocean-region-10km.sqlite |
+    gzip -c  > atw2_20k-region.json.gz
