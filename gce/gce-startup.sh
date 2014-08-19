@@ -1,26 +1,23 @@
 #!/bin/bash
 
-#echo "source /usr/local/share/google/google-cloud-sdk/path.bash.inc" >> /etc/profile
-#echo "source /usr/local/share/google/google-cloud-sdk/completion.bash.inc" >> /etc/profile
-#
-#sudo apt-get update
-#sudo apt-get install gcc python-dev python-setuptools -y
-#sudo apt-get install git -y
-#sudo apt-get install python-pip -y
-#sudo apt-get install zip unzip
-#sudo apt-get install python-gdal -y
-#
-#sudo pip install -U crcmod
-#
-#cd /usr/local/src
-#sudo git clone https://github.com/SkyTruth/pelagos-data.git
-#sudo pip install -r ./pelagos-data/requirements.txt
+# Startup script for image pelagosdata1
+# https://console.developers.google.com/project/apps~skytruth-pelagos-dev/compute/imagesDetail/global/images/pelagosdata1
 
+#TODO: set up images so that is pulls the latest pelagos-data commit and then runs a
+# setup script in from the repo.  The startup script passed to the instance just does that.
+# Accumulate new changes to the instance in the second script, and every once in a while
+# make a new image that contains all those changes
 
-# New startup script (much tidier :-)
+sudo gcloud components update -q
+sudo gcloud components update gae-python -q
+sudo gcloud components update app -q
+
+sudo pip install virtualenv
+
 cd /usr/local/src/pelagos-data
 sudo git pull
 sudo pip install -r requirements.txt
+
 
 
 
