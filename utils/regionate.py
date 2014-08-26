@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-"""Pelagos Model Transform.
+"""Pelagos Regionate
 
 Usage:
-  process_ais.py [options] POLY_LAYER [POINTS_IN [POINTS_OUT]] [-q | -v]
-  process_ais.py [options] POLY_LAYER [-] [POINTS_OUT] [-q | -v]
-  process_ais.py (-h | --help)
-  process_ais.py --version
+  regionate.py [options] POLY_LAYER [POINTS_IN [POINTS_OUT]] [-q | -v]
+  regionate.py [options] POLY_LAYER [-] [POINTS_OUT] [-q | -v]
+  regionate.py (-h | --help)
+  regionate.py --version
 
 Options:
   --attribute=ATTRIB   Attribute in the polygon layer containing the regionid [default: regionid]
@@ -56,7 +56,25 @@ from osgeo import ogr
 #         raise IOError('Layer %s not found in %s' % (layer_name, file_name))
 #     else:
 #         raise IOError('No Polygon layers found in %s' % file_name)
+def load_layers (data_source, arg):
+    layers = []
+    layer_name = arg['--layername']
+    for i in range(0,data_source.GetLayerCount()):
+        layer = data_source.GetLayerByIndex(i)
+        if layer_name:
+            if layer_name == layer.GetName():
+                layers.append(layer)
+        else:
+            if layer.GetGeomType() in (3,6):
+                layers.append(layer)
 
+    if not layers:
+        if arg['--layername']:
+            raise IOError('Layer %s not found in %s' % (arg['--layername'], arg['POLY_LAYER']))
+        else:
+            raise IOError('No Polygon layers found in %s' % arg['POLY_LAYER'])
+
+    return layers
 
 def regionate (file_in, file_out, arg):
 
@@ -69,43 +87,21 @@ def regionate (file_in, file_out, arg):
     if poly_ds is None:
         raise IOError('Unable to open %s' % arg['POLY_LAYER'])
 
-    # TODO: CLEANUP. Ok, so this is a mess here.  I tried to wrap it in a function load_layer() but i kept
-    # getting SEGFAULT errors when I made a call on the layer after it was returned
-    # so at least this works....
-
-    layer = None
-    layer_name = arg['--layername']
-    if layer_name:
-        for i in range(0,poly_ds.GetLayerCount()):
-            lyr = poly_ds.GetLayerByIndex(i)
-            if lyr.GetName() == arg['--layername']:
-                layer = lyr
-                break
-    else:
-        for i in range(0,poly_ds.GetLayerCount()):
-            lyr = poly_ds.GetLayerByIndex(i)
-            if lyr.GetGeomType() in (3,6):
-                layer = lyr
-                break
-
-    if layer is None:
-        if arg['--layername']:
-            raise IOError('Layer %s not found in %s' % (arg['--layername'], arg['POLY_LAYER']))
-        else:
-            raise IOError('No Polygon layers found in %s' % arg['POLY_LAYER'])
+    layers = load_layers(poly_ds, arg)
 
     reader = csv.DictReader(file_in)
     fieldnames = reader.fieldnames
     for row in reader:
         point = ogr.CreateGeometryFromWkt("POINT (%s %s)" % (row['longitude'], row['latitude']))
-        layer.SetSpatialFilter(point)
         regionids = []
-        feature = layer.GetNextFeature()
-        while feature:
-            field_idx = feature.GetFieldIndex(arg['--attribute'])
-            if field_idx != -1 and feature.GetGeometryRef().Intersects(point):
-                regionids.append(feature.GetFieldAsString(field_idx))
+        for layer in layers:
+            layer.SetSpatialFilter(point)
             feature = layer.GetNextFeature()
+            while feature:
+                field_idx = feature.GetFieldIndex(arg['--attribute'])
+                if field_idx != -1 and feature.GetGeometryRef().Intersects(point):
+                    regionids.append(feature.GetFieldAsString(field_idx))
+                feature = layer.GetNextFeature()
         row_out = row
         row_out['region'] = regionids
         file_out.write(json.dumps(row_out, sort_keys=True))
