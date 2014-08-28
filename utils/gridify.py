@@ -209,11 +209,13 @@ def main(args):
 
     output_driver_name = "ESRI Shapefile"
     processes = 1
+    processing_algorithm = 'region'
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Containers
     #/* ----------------------------------------------------------------------- */#
 
+    options_processing_algorithm = ('region', 'grid')
     grid_file = None
     grid_layer_name = None
     region_file = None
@@ -277,9 +279,9 @@ def main(args):
                 output_dsco.append(args[i - 1])
 
             # Additional options
-            elif arg == '--processes=':
+            elif '--algorithm=' in arg:
                 i += 1
-                processes = arg[i - 1].split('=', 1)[1]
+                processing_algorithm = args[i - 1].split('=', 1)[1]
 
             # Positional arguments and errors
             else:
@@ -343,14 +345,10 @@ def main(args):
         print("ERROR: Need write access: %s" % dirname(output_file))
 
     # Check additional options
-    try:
-        processes = int(processes)
-        if not 1 <= processes <= multiprocessing.cpu_count():
-            bail = True
-            print("ERROR: Processes must be >= 1 and <= %s: %s" % (multiprocessing.cpu_count(), processes))
-    except ValueError:
+    if processing_algorithm.lower() not in options_processing_algorithm:
         bail = True
-        print("ERROR: Invalid processes - must be an int: %s" % processes)
+        print("ERROR: Invalid processing algorithm: %s" % processing_algorithm)
+        print("       Options: %s" % ', '.join(options_processing_algorithm))
 
     # Exit if something did not pass validation
     if bail:
@@ -443,7 +441,7 @@ def main(args):
 
             # Update user
             grid_layer_counter += 1
-            print("Processing grid layer %s/%s: %s" % (grid_layer_counter, len(all_grid_layers), grid_layer.GetName()))
+            print("  Processing grid layer %s/%s: %s" % (grid_layer_counter, len(all_grid_layers), grid_layer.GetName()))
 
             # Create output layer
             output_layer_name = region_layer.GetName() + '-' + grid_layer.GetName()
@@ -460,46 +458,113 @@ def main(args):
             else:
                 coord_transform = None
 
-            # Create an output chunk for every intersecting geometry for grid cell
-            grid_feature_counter = 0
-            num_grid_features = len(grid_layer)
-            for grid_feature in grid_layer:
+            # TODO: Determine which algorithm to use - grid centric or region polygon centric
 
-                # Update user
-                grid_feature_counter += 1
-                sys.stdout.write("\r\x1b[K" + "  %s/%s" % (grid_feature_counter, num_grid_features))
-                sys.stdout.flush()
-
-                # Prep region layer
-                grid_geom = grid_feature.GetGeometryRef()
+            #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
+            #/*     Region polygon centric algorithm
+            #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
+            
+            if processing_algorithm.lower() == 'region':
+                                
+                # # Create an output chunk for every intersecting geometry for grid cell
+                region_feature_counter = 0
+                num_region_features = len(region_layer)
                 region_layer.ResetReading()
-                region_layer.SetSpatialFilter(grid_geom)
                 for region_feature in region_layer:
-
-                    # Prep geometry
+    
+                    # Cache region geometry
                     region_geom = region_feature.GetGeometryRef().Clone()
-                    region_geom_envelope = region_geom.ConvexHull()
                     if coord_transform is not None:
-                        region_geom_envelope.Transform()
+                        region_geom.Transform(coord_transform)
+    
+                    # Apply a spatial filter to the grid
+                    spat_filter_geom = region_geom.ConvexHull()
+                    grid_layer.SetSpatialFilter(spat_filter_geom)
+                    grid_layer.ResetReading()
 
-                    # Check to see if the grid cell intersects the envelope
-                    if grid_geom.Intersects(region_geom_envelope):
+                    # Update user
+                    region_feature_counter += 1
+                    sys.stdout.write("\r\x1b[K" + "    %s/%s - %s" % (region_feature_counter, num_region_features, len(grid_layer)))
+                    sys.stdout.flush()
+
+                    for grid_feature in grid_layer:
+    
+                        grid_geom = grid_feature.GetGeometryRef()
+    
+                        intersecting_geom = grid_geom.Intersection(region_geom)
+                        if intersecting_geom is not None:
+                            output_feature = region_feature.Clone()
+                            output_feature.SetGeometry(intersecting_geom)
+                            output_layer.CreateFeature(output_feature)
+    
+                # Update user - done processing a grid layer
+                print(" - Done")
+                output_layer.SyncToDisk()
+
+            #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
+            #/*     Grid centric algorithms
+            #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
+
+            elif processing_algorithm.lower() == 'grid':
+                    
+                # # Limit the number of features in the grid_layer that will be processed
+                # # Create a convex hull from the entire region layer and use that as a spatial filter for the grid layer
+                # # Be sure to reset reading afterwards
+                # # TODO: This produces one enormous hull that is too simple - need to produce a cascading intersection
+                limit_geom = ogr.Geometry(ogr.wkbGeometryCollection)
+                limit_geom.AssignSpatialReference(region_layer.GetSpatialRef())
+                for region_feature in region_layer:
+                    limit_geom.AddGeometry(region_feature.GetGeometryRef())
+                if limit_geom.GetSpatialReference().IsSame(grid_layer_srs) is not 1:
+                    limit_geom.Transform(coord_transform)
+                region_layer.ResetReading()
+                limit_geom = limit_geom.ConvexHull()
+                grid_layer.SetSpatialFilter(limit_geom)
+                
+                # Create an output chunk for every intersecting geometry for grid cell
+                grid_feature_counter = 0
+                num_grid_features = len(grid_layer)
+                for grid_feature in grid_layer:
+
+                    # Prep region layer
+                    grid_geom = grid_feature.GetGeometryRef()
+                    region_layer.ResetReading()
+                    region_layer.SetSpatialFilter(grid_geom)
+
+                    # Update user
+                    grid_feature_counter += 1
+                    sys.stdout.write("\r\x1b[K" + "    %s/%s - %s" % (grid_feature_counter, num_grid_features,
+                                                                      len(region_layer)))
+                    sys.stdout.flush()
+
+                    for region_feature in region_layer:
+                
+                        # Compute the intersection
+                        region_geom = region_feature.GetGeometryRef().Clone()
                         if coord_transform is not None:
                             region_geom.Transform(coord_transform)
                         intersecting_geometry = grid_geom.Intersection(region_geom)
-                    else:
-                        intersecting_geometry = grid_geom.Intersection(region_geom)
-
-                    # Add new feature to the output layer
-                    if intersecting_geometry is not None:
-                        output_feature = region_feature.Clone()
-                        output_feature.SetGeometry(intersecting_geometry)
-                        output_layer.CreateFeature(output_feature)
-
-            # Update user - done processing a grid layer
-            print(" - Done")
+                
+                        # Add new feature to the output layer
+                        if intersecting_geometry is not None:
+                            output_feature = region_feature.Clone()
+                            output_feature.SetGeometry(intersecting_geometry)
+                            output_layer.CreateFeature(output_feature)
+                
+                # Update user - done processing a grid layer
+                print(" - Done")
+                output_layer.SyncToDisk()
+            
+            #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
+            #/*     Bad algorithm
+            #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
+            
+            else:
+                print("ERROR: Invalid processing algorithm: %s" % processing_algorithm)
+                return 1
 
     # Cleanup
+    limit_geom = None
     coord_transform = None
     region_geom = None
     grid_geom = None
