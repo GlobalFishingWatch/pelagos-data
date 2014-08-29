@@ -1,4 +1,4 @@
-series,mmsi,source,sourceid,datetime,callsign,class,flag,imo,name
+series,mmsi,source,sourceid,datetime,callsign,vesselclass,flagstate,imo,vesselname
 20000,371,MarineTraffic.com,371,2014-07-24,3FCZ6,Tug,,,GEO CASPIAN
 19995,2331,MarineTraffic.com,2331,2014-07-24,E.T,Wing In Grnd,,,MBIGUA
 19994,2332,MarineTraffic.com,2332,2014-07-24,TRAMITE,Tug,,,R/E GUYRATI

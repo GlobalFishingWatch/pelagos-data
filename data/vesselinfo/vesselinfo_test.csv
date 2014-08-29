@@ -1,8 +1,9 @@
-series,mmsi,source,sourceid
-1,477897100,test,1
-2,477897700,test,2
-3,477897800,test,3
-4,477898200,test,4
-5,477898400,test,5
-6,477898700,test,6
-7,477899200,test,7
+series,mmsi,source,sourceid,datetime,callsign,vesselclass,flagstate,imo,vesselname
+19946,245688000,MarineTraffic.com,245688000,2014-07-24,PBBO,Dredger,Netherlands,,SIMSON
+19945,247323600,MarineTraffic.com,247323600,2014-07-24,IJES2,Sailing vessel,Italy,9606247,OHANA
+20000,371,MarineTraffic.com,371,2014-07-24,3FCZ6,Tug,,,GEO CASPIAN
+19995,2331,MarineTraffic.com,2331,2014-07-24,E.T,Wing In Grnd,,,MBIGUA
+103,503005000,Global_20k_AIS,503005000,2012-07-01,,,,,
+95,503000026,Global_20k_AIS,503000026,2012-07-01,,,,,
+94,503000005,Global_20k_AIS,503000005,2012-07-01,,,,,
+93,503000004,Global_20k_AIS,503000004,2012-07-01,,,,,

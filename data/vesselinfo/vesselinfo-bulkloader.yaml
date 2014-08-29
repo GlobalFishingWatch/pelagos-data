@@ -22,3 +22,16 @@ transformers:
       external_name: source
     - property: sourceid
       external_name: sourceid
+    - property: datetime
+      external_name: datetime
+      import_transform: transform.import_date_time('%Y-%m-%d')
+    - property: callsign
+      external_name: callsign
+    - property: vesselclass
+      external_name: vesselclass
+    - property: vesselname
+      external_name: vesselname
+    - property: flagstate
+      external_name: flagstate
+    - property: imo
+      external_name: imo
