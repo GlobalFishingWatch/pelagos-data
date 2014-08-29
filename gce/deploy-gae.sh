@@ -10,4 +10,5 @@ source pelagos/gae/virtualenvloader/gaevirtualenv/bin/activate
 pip install -r pelagos/gae-requirements.txt
 
 # Deploy
+# Update app.yaml to match project
 gcloud preview app deploy pelagos/gae --project skytruth-pelagos-dev
