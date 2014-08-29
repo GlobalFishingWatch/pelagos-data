@@ -208,14 +208,13 @@ def main(args):
     #/* ----------------------------------------------------------------------- */#
 
     output_driver_name = "ESRI Shapefile"
-    processes = 1
-    processing_algorithm = 'region'
+    processing_algorithm = 'combined'
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Containers
     #/* ----------------------------------------------------------------------- */#
 
-    options_processing_algorithm = ('region', 'grid')
+    options_processing_algorithm = ('region', 'grid', 'combined', 'regionnohull')
     grid_file = None
     grid_layer_name = None
     region_file = None
@@ -251,13 +250,13 @@ def main(args):
             # Specify input files
             elif '--grid=' in arg:
                 i += 1
-                grid_file = abspath(arg.split('=', 1)[1])
+                grid_file = arg.split('=', 1)[1]
             elif '-gl' in arg:
                 i += 2
                 grid_layer_name = args[i - 1]
             elif '--region=' in arg:
                 i += 1
-                region_file = abspath(arg.split('=', 1)[1])
+                region_file = arg.split('=', 1)[1]
             elif '-rl' in arg:
                 i += 1
                 region_layer_name = args[i - 1]
@@ -265,7 +264,7 @@ def main(args):
             # Output file
             elif arg == '-o':
                 i += 2
-                output_file = abspath(args[i - 1])
+                output_file = args[i - 1]
 
             # OGR output options
             elif arg == '-of':
@@ -331,7 +330,7 @@ def main(args):
         print("ERROR: Invalid input region file: %s" % region_file)
     elif not os.access(region_file, os.R_OK):
         bail = True
-        print("ERROR: Invalid input region file: %s" % region_file)
+        print("ERROR: Can't access input region file: %s" % region_file)
 
     # Check output file
     if not isinstance(output_file, str):
@@ -340,9 +339,9 @@ def main(args):
     elif os.path.exists(output_file):
         bail = True
         print("ERROR: Output file exists: %s" % output_file)
-    elif not os.access(dirname(output_file), os.W_OK):
-        bail = True
-        print("ERROR: Need write access: %s" % dirname(output_file))
+    # elif not os.access(dirname(output_file), os.W_OK):
+    #     bail = True
+    #     print("ERROR: Need write access: %s" % dirname(output_file))
 
     # Check additional options
     if processing_algorithm.lower() not in options_processing_algorithm:
@@ -439,6 +438,37 @@ def main(args):
 
         for grid_layer in all_grid_layers:
 
+            # Get field definitions for processing
+            # Make sure there are no duplicate fields
+
+            # Get feature definitions
+            region_feature_def = region_layer.GetLayerDefn()
+            grid_feature_def = grid_layer.GetLayerDefn()
+
+            # Get field definitions
+            region_field_definitions = [region_feature_def.GetFieldDefn(i) for i in range(region_feature_def.GetFieldCount())]
+            grid_field_definitions = [grid_feature_def.GetFieldDefn(i) for i in range(grid_feature_def.GetFieldCount())]
+
+            # Get list of fields - used to check for duplicate fields and used to populate output features
+            region_layer_fields = [i.GetName() for i in region_field_definitions]
+            grid_layer_fields = [i.GetName() for i in grid_field_definitions]
+
+            # Check for duplicate fields
+            bail = False
+            for r_field in region_layer_fields:
+                if r_field in grid_layer_fields:
+                    bail = True
+                    print("ERROR: Duplicate field: %s" % r_field)
+            if bail:
+                r_field = None
+                region_feature_def = None
+                grid_feature_def = None
+                region_field_definitions = None
+                grid_field_definitions = None
+                grid_layer = None
+                region_layer = None
+                return 1
+
             # Update user
             grid_layer_counter += 1
             print("  Processing grid layer %s/%s: %s" % (grid_layer_counter, len(all_grid_layers), grid_layer.GetName()))
@@ -446,7 +476,16 @@ def main(args):
             # Create output layer
             output_layer_name = region_layer.GetName() + '-' + grid_layer.GetName()
             output_layer = output_ds.CreateLayer(output_layer_name, srs=grid_layer.GetSpatialRef(),
-                                                 geom_type=ogr.wkbPolygon, options=output_lco)
+                                                 geom_type=ogr.wkbMultiPolygon, options=output_lco)
+            for field_def in region_field_definitions + grid_field_definitions:
+                output_layer.CreateField(field_def)
+
+            # Cleanup
+            region_field_definitions = None
+            grid_field_definitions = None
+            region_feature_def = None
+            grid_feature_def = None
+            field_def = None
 
             # Cache SRS objects
             grid_layer_srs = region_layer.GetSpatialRef()
@@ -463,8 +502,14 @@ def main(args):
             #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
             #/*     Region polygon centric algorithm
             #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
+
+            print("    Using algorithm: %s" % processing_algorithm)
             
             if processing_algorithm.lower() == 'region':
+
+                # No upfront data prep
+                # Uses the convex hull of the region feature being processed as a spatial index on every pass
+                # Limits the number of grid cells being examined
                                 
                 # # Create an output chunk for every intersecting geometry for grid cell
                 region_feature_counter = 0
@@ -484,7 +529,7 @@ def main(args):
 
                     # Update user
                     region_feature_counter += 1
-                    sys.stdout.write("\r\x1b[K" + "    %s/%s - %s" % (region_feature_counter, num_region_features, len(grid_layer)))
+                    sys.stdout.write("\r\x1b[K" + "    %s/%s" % (region_feature_counter, num_region_features))
                     sys.stdout.flush()
 
                     for grid_feature in grid_layer:
@@ -492,11 +537,67 @@ def main(args):
                         grid_geom = grid_feature.GetGeometryRef()
     
                         intersecting_geom = grid_geom.Intersection(region_geom)
-                        if intersecting_geom is not None:
+                        if not intersecting_geom.IsEmpty():
+                            if intersecting_geom.GetGeometryType() is ogr.wkbGeometryCollection:
+                                temp_geom = ogr.Geometry(ogr.wkbMultiPolygon)
+                                for i in range(intersecting_geom.GetGeometryCount()):
+                                    sub_geom = intersecting_geom.GetGeometryRef(i)
+                                    if sub_geom.GetPointCount() > 2:
+                                        temp_geom.AddGeometry(sub_geom)
+                                intersecting_geom = temp_geom
                             output_feature = region_feature.Clone()
                             output_feature.SetGeometry(intersecting_geom)
                             output_layer.CreateFeature(output_feature)
     
+                # Update user - done processing a grid layer
+                print(" - Done")
+                output_layer.SyncToDisk()
+
+            #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
+            #/*     Region polygon centric algorithm - NO CONVEX HULL
+            #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
+
+            elif processing_algorithm.lower() == 'regionnohull':
+
+                # Same as above but uses the more complex region geometry as the spatial filter instead of a convex hull
+
+                # # Create an output chunk for every intersecting geometry for grid cell
+                region_feature_counter = 0
+                num_region_features = len(region_layer)
+                region_layer.ResetReading()
+                for region_feature in region_layer:
+
+                    # Cache region geometry
+                    region_geom = region_feature.GetGeometryRef().Clone()
+                    if coord_transform is not None:
+                        region_geom.Transform(coord_transform)
+
+                    # Spatial filter
+                    grid_layer.SetSpatialFilter(region_geom)
+                    grid_layer.ResetReading()
+
+                    # Update user
+                    region_feature_counter += 1
+                    sys.stdout.write("\r\x1b[K" + "    %s/%s" % (region_feature_counter, num_region_features))
+                    sys.stdout.flush()
+
+                    for grid_feature in grid_layer:
+
+                        grid_geom = grid_feature.GetGeometryRef()
+
+                        intersecting_geom = grid_geom.Intersection(region_geom)
+                        if not intersecting_geom.IsEmpty():
+                            if intersecting_geom.GetGeometryType() is ogr.wkbGeometryCollection:
+                                temp_geom = ogr.Geometry(ogr.wkbMultiPolygon)
+                                for i in range(intersecting_geom.GetGeometryCount()):
+                                    sub_geom = intersecting_geom.GetGeometryRef(i)
+                                    if sub_geom.GetPointCount() > 2:
+                                        temp_geom.AddGeometry(sub_geom)
+                                intersecting_geom = temp_geom
+                            output_feature = region_feature.Clone()
+                            output_feature.SetGeometry(intersecting_geom)
+                            output_layer.CreateFeature(output_feature)
+
                 # Update user - done processing a grid layer
                 print(" - Done")
                 output_layer.SyncToDisk()
@@ -507,19 +608,26 @@ def main(args):
 
             elif processing_algorithm.lower() == 'grid':
                     
-                # # Limit the number of features in the grid_layer that will be processed
-                # # Create a convex hull from the entire region layer and use that as a spatial filter for the grid layer
-                # # Be sure to reset reading afterwards
-                # # TODO: This produces one enormous hull that is too simple - need to produce a cascading intersection
+                # Limit the number of features in the grid_layer that will be processed
+                # Create a geometry collection containing one convex hull per region geometry
+                # Use this geometry as a spatial filter on the grid layer
+                # Be sure to reset reading afterwards
+                # Get one grid feature and stamp out all intersecting region polygons
+                #   Repeat ...
+
+                print("    Progress units are grid features")
+                print("    Prepping data ...")
                 limit_geom = ogr.Geometry(ogr.wkbGeometryCollection)
                 limit_geom.AssignSpatialReference(region_layer.GetSpatialRef())
                 for region_feature in region_layer:
-                    limit_geom.AddGeometry(region_feature.GetGeometryRef())
+                    region_geom = region_feature.GetGeometryRef()
+                    limit_geom.AddGeometry(region_geom.ConvexHull())
                 if limit_geom.GetSpatialReference().IsSame(grid_layer_srs) is not 1:
                     limit_geom.Transform(coord_transform)
                 region_layer.ResetReading()
-                limit_geom = limit_geom.ConvexHull()
                 grid_layer.SetSpatialFilter(limit_geom)
+                region_feature = None
+                region_geom = None
                 
                 # Create an output chunk for every intersecting geometry for grid cell
                 grid_feature_counter = 0
@@ -533,8 +641,7 @@ def main(args):
 
                     # Update user
                     grid_feature_counter += 1
-                    sys.stdout.write("\r\x1b[K" + "    %s/%s - %s" % (grid_feature_counter, num_grid_features,
-                                                                      len(region_layer)))
+                    sys.stdout.write("\r\x1b[K" + "    %s/%s" % (grid_feature_counter, num_grid_features))
                     sys.stdout.flush()
 
                     for region_feature in region_layer:
@@ -543,14 +650,104 @@ def main(args):
                         region_geom = region_feature.GetGeometryRef().Clone()
                         if coord_transform is not None:
                             region_geom.Transform(coord_transform)
-                        intersecting_geometry = grid_geom.Intersection(region_geom)
+                        intersecting_geom = grid_geom.Intersection(region_geom)
                 
                         # Add new feature to the output layer
-                        if intersecting_geometry is not None:
+                        if not intersecting_geom.IsEmpty():
+                            if intersecting_geom.GetGeometryType() is ogr.wkbGeometryCollection:
+                                temp_geom = ogr.Geometry(ogr.wkbMultiPolygon)
+                                for i in range(intersecting_geom.GetGeometryCount()):
+                                    sub_geom = intersecting_geom.GetGeometryRef(i)
+                                    if sub_geom.GetGeometryType() in (ogr.wkbPolygon, ogr.wkbMultiPolygon):
+                                        temp_geom.AddGeometry(sub_geom)
+                                intersecting_geom = temp_geom
                             output_feature = region_feature.Clone()
-                            output_feature.SetGeometry(intersecting_geometry)
+                            output_feature.SetGeometry(intersecting_geom)
                             output_layer.CreateFeature(output_feature)
                 
+                # Update user - done processing a grid layer
+                print(" - Done")
+                output_layer.SyncToDisk()
+
+            #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
+            #/*     Combined
+            #/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */#
+
+            elif processing_algorithm == 'combined':
+
+                # Create an initial spatial filter consisting of one convex hull for every input region
+                # This yields a much smaller set of grid tiles that need to be examined
+                # Dump these filtered grid cells into an in-memory layer
+                # Loop through all regions, set a spatial filter on the in-memory layer = convex hull
+                # Stamp out all grid cells
+
+                print("    Progress units are region features")
+                print("    Prepping data ...")
+
+                # Create an initial spatial filter from all input geometries
+                # Create a single geometry containing one convex hull for every input feature
+                limit_geom = ogr.Geometry(ogr.wkbGeometryCollection)
+                limit_geom.AssignSpatialReference(region_layer.GetSpatialRef())
+                for region_feature in region_layer:
+                    region_geom = region_feature.GetGeometryRef()
+                    limit_geom.AddGeometry(region_geom.ConvexHull())
+                if limit_geom.GetSpatialReference().IsSame(grid_layer_srs) is not 1:
+                    limit_geom.Transform(coord_transform)
+                region_layer.ResetReading()
+                grid_layer.SetSpatialFilter(limit_geom)
+                region_feature = None
+                region_geom = None
+
+                # Stash all the found grid cells into an in memory layer
+                mem_driver = ogr.GetDriverByName('Memory')
+                mem_ds = mem_driver.CreateDataSource('mem_grids')
+                mem_layer = mem_ds.CreateLayer('mem_grids', grid_layer.GetSpatialRef(), grid_layer.GetGeomType())
+                for grid_feature in grid_layer:
+                    mem_layer.CreateFeature(grid_feature)
+                grid_layer.ResetReading()
+
+                # Loop through the region polygons, set a spatial filter
+                region_feature_counter = 0
+                num_region_features = len(region_layer)
+                for region_feature in region_layer:
+
+                    # Update user
+                    region_feature_counter += 1
+                    sys.stdout.write("\r\x1b[K" + "    %s/%s" % (region_feature_counter, num_region_features))
+                    sys.stdout.flush()
+
+                    region_geom = region_feature.GetGeometryRef().Clone()
+                    if coord_transform is not None:
+                        region_geom.Transform(coord_transform)
+                    mem_layer.ResetReading()
+                    mem_layer.SetSpatialFilter(region_geom.ConvexHull())
+
+                    # Stamp out all intersecting grids and add to output layer
+                    for m_grid_feature in mem_layer:
+
+                        m_grid_geom = m_grid_feature.GetGeometryRef()
+                        intersecting_geom = m_grid_geom.Intersection(region_geom)
+                        if not intersecting_geom.IsEmpty():
+                            if intersecting_geom.GetGeometryType() is ogr.wkbGeometryCollection:
+                                temp_geom = ogr.Geometry(ogr.wkbMultiPolygon)
+                                for i in range(intersecting_geom.GetGeometryCount()):
+                                    sub_geom = intersecting_geom.GetGeometryRef(i)
+                                    if sub_geom.GetPointCount() > 2:
+                                        temp_geom.AddGeometry(sub_geom)
+                                intersecting_geom = temp_geom
+                            output_feature = region_feature.Clone()
+                            output_feature.SetGeometry(intersecting_geom)
+
+                            # TODO: Why are output fields being populated when this is commented out???
+
+                            # for i, field in enumerate(region_layer_fields):
+                            #     value = region_feature.GetField(i)
+                            #     output_feature.SetField(field, value)
+                            # for i, field in enumerate(grid_layer_fields):
+                            #     value = region_feature.GetField(i)
+                            #     output_feature.SetField(field, value)
+                            output_layer.CreateFeature(output_feature)
+
                 # Update user - done processing a grid layer
                 print(" - Done")
                 output_layer.SyncToDisk()
@@ -564,11 +761,18 @@ def main(args):
                 return 1
 
     # Cleanup
+    temp_geom = None
+    sub_geom = None
+    m_grid_feature = None
+    m_grid_geom = None
+    mem_layer = None
+    mem_ds = None
+    mem_driver = None
     limit_geom = None
     coord_transform = None
     region_geom = None
     grid_geom = None
-    intersecting_geometry = None
+    intersecting_geom = None
     output_feature = None
     output_layer = None
     region_layer_srs = None
