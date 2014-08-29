@@ -15,14 +15,24 @@ bq load --skip_leading_rows=1 --max_bad_records=100 \
     Global_20k_2012.processed_1_3 gs://analyze-data/processed/atw2_20k-processed.csv.gz \
     /usr/local/src/pelagos-data/schema/scored-ais-processed-schema-1.3.json
 
+# Regionate test
+cd /usr/local/src/pelagos-data/
+gunzip -c ./data/sample_ais/processed_1_3_10k_points.csv.gz | \
+    ./utils/regionate.py ./data/regions/regions.sqlite | \
+    gzip -c > ~/regionated_1_3_10k_points.jsin.gz
 
 # Regionate
 gunzip -c atw2_20k-processed.csv.gz |
     /usr/local/src/pelagos-data/utils/regionate.py
-    --layername=ocean2 ocean-region-10km.sqlite |
+    /usr/local/src/pelagos-data/data/regions/region.sqlite |
     gzip -c  > atw2_20k-region.json.gz
+
+# upload it
+gsutil cp atw2_20k-region.json.gz gs://analyze-data/processed/
+
 
 # load into bigquery
 bq load --source_format=NEWLINE_DELIMITED_JSON \
     Scratch.atw2_20k_region_dev2 gs://analyze-data/processed/atw2_20k-region-dev2.json.gz \
     /usr/local/src/pelagos-data/schema/scored-ais-processed-schema-1.4.json
+

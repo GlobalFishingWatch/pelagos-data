@@ -1,0 +1,37 @@
+python_preamble:
+- import: base64
+- import: re
+- import: google.appengine.ext.bulkload.transform
+- import: google.appengine.ext.bulkload.bulkloader_wizard
+- import: google.appengine.ext.db
+- import: google.appengine.api.datastore
+- import: google.appengine.api.users
+
+transformers:
+- kind: VesselInfo
+  connector: csv
+  connector_options:
+    encoding: utf-8
+  property_map:
+    - property: __key__
+      external_name: series
+      export_transform: datastore.Key.name
+    - property: mmsi
+      external_name: mmsi
+    - property: source
+      external_name: source
+    - property: sourceid
+      external_name: sourceid
+    - property: datetime
+      external_name: datetime
+      import_transform: transform.import_date_time('%Y-%m-%d')
+    - property: callsign
+      external_name: callsign
+    - property: vesselclass
+      external_name: vesselclass
+    - property: vesselname
+      external_name: vesselname
+    - property: flagstate
+      external_name: flagstate
+    - property: imo
+      external_name: imo
