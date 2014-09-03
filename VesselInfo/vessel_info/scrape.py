@@ -72,13 +72,13 @@ class MMSI(object):
     ofields = ['name', 'class', 'callsign', 'imo', 'flag', 'system', 'mmsi', 'source']
 
     def __repr__(self):
-        return "%s(%s, user_agent=%s, null=%s)" \
-               % (self.__class__.__name__, self.mmsi, self.user_agent, self.null)
+        return "%s(%s, user_agent=%s, null=%s, timeout=%s)" \
+               % (self.__class__.__name__, self.mmsi, self.user_agent, self.null, self.timeout)
 
     def __str__(self):
         return self.__repr__()
 
-    def __init__(self, mmsi, user_agent=None, null=None):
+    def __init__(self, mmsi, user_agent=None, null=None, timeout=2):
 
         """Collect vessel information by scraping specific websites
 
@@ -98,6 +98,7 @@ class MMSI(object):
 
         self.mmsi = mmsi
         self.null = null
+        self.timeout = timeout
         if user_agent is None or user_agent.lower() == 'random':
             self.user_agent = random.choice(USER_AGENTS)
         else:
