@@ -459,7 +459,7 @@ def main(args):
             stream.write("ERROR: Invalid scraper option: %s\n" % so)
 
     # Check subsample
-    if process_subsample is not None and not isinstance(process_subsample, int) or process_subsample < 1:
+    if process_subsample is not None and not isinstance(process_subsample, int) or process_subsample is not None and process_subsample < 1:
         bail = True
         stream.write("ERROR: Invalid subsample - must be an int >= 1: %s\n" % process_subsample)
         
