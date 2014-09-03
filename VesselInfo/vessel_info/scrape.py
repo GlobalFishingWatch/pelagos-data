@@ -56,6 +56,7 @@ DEFAULT_RETRY = 3
 DEFAULT_PAUSE = 1
 DEFAULT_PAUSE_MIN = 0
 DEFAULT_PAUSE_MAX = 3
+DEFAULT_TIMEOUT = 2
 USER_AGENTS = ['Mozilla/30.0']
 
 
@@ -78,7 +79,7 @@ class MMSI(object):
     def __str__(self):
         return self.__repr__()
 
-    def __init__(self, mmsi, user_agent=None, null=None, timeout=2):
+    def __init__(self, mmsi, user_agent=None, null=None, timeout=DEFAULT_TIMEOUT):
 
         """Collect vessel information by scraping specific websites
 
@@ -607,6 +608,7 @@ def auto_scrape(mmsi_scraper, **kwargs):
     keep_scraper = kwargs.get('keep_scraper', None)
     skip_scraper = kwargs.get('skip_scraper', None)
     all_scraper_options = kwargs.get('scraper_options', {})
+    verbose = kwargs.get('verbose', False)
     if isinstance(keep_scraper, str):
         keep_scraper = keep_scraper.split(',')
     if isinstance(skip_scraper, str):
@@ -658,7 +660,8 @@ def auto_scrape(mmsi_scraper, **kwargs):
                     else:
                         status_string = "MMSI: %s  %s  attempt %s/%s: %s\n"
 
-                    stream.write(stream_prefix + status_string % (mmsi_scraper.mmsi, scraper_name,
-                                                                  attempt_num, retry, e))
+                    if verbose:
+                        stream.write(stream_prefix + status_string % (mmsi_scraper.mmsi, scraper_name,
+                                                                      attempt_num, retry, e))
 
     return result

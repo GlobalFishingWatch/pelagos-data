@@ -281,6 +281,7 @@ def main(args):
     overwrite_mode = False
     process_subsample = None
     request_timeout = scrape.DEFAULT_TIMEOUT
+    print_progress = True
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Containers
@@ -496,7 +497,7 @@ def main(args):
 
             # Get a subsample if necessary
             if process_subsample is not None:
-                reader = [row for i, row in enumerate(reader) if i <= process_subsample]
+                reader = [row for i, row in enumerate(reader) if i <= process_subsample - 1]
                 num_rows = len(reader)
             
             # Add some formatting to the auto-scraper output
@@ -504,8 +505,15 @@ def main(args):
             auto_scrape_options['stream_prefix'] = '    '
             auto_scrape_options['scraper_options'] = scraper_options.copy()
             auto_scrape_options['timeout'] = request_timeout
-            stream.write("Silently processing %s MMSI's unless an error is encountered...\n" % num_rows)
+            #stream.write("Silently processing %s MMSI's unless an error is encountered...\n" % num_rows)
+            #stream.write("Processing...\n" % num_rows)
+            prog_i = 0
             for row in reader:
+
+                if print_progress:
+                    prog_i += 1
+                    stream.write("\r\x1b[K" + "    %s/%s - MMSI: %s" % (str(prog_i), str(num_rows), row[input_csv_mmsi_field]))
+                    stream.flush()
 
                 result = scrape.auto_scrape(scrape.MMSI(row[input_csv_mmsi_field]), **auto_scrape_options)
                 if result is not None:
@@ -525,7 +533,7 @@ def main(args):
     #/* ----------------------------------------------------------------------- */#
 
     # Success
-    stream.write("Done.\n")
+    stream.write(" - Done\n")
     return 0
 
 
