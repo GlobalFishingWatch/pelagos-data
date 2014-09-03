@@ -273,17 +273,19 @@ class MMSI(object):
 
                 {
                     'name': 'NORDLINK',
-                    'class': 'Ro-ro/passenger ship',
+                    'class': 'Passenger/Ro-Ro Cargo Ship',
                     'callsign': 'SJPW',
                     'imo': '9336256',
                     'flag': 'Sweden',
-                    'system': 'AIS Marine Traffic',
+                    'system': None,
                     'mmsi': '266252000',
                     'source': 'VesselFinder
                 }
 
             Fields that cannot be collected are set to the user specified null value
-            which defaults to None
+            which defaults to None.
+
+            NOTE: The 'system' field cannot be collected
 
 
         Raises:
@@ -437,17 +439,19 @@ class MMSI(object):
 
                 {
                     'name': 'NORDLINK',
-                    'class': 'Ro-ro/passenger ship',
+                    'class': 'RoRo ship',
                     'callsign': 'SJPW',
                     'imo': '9336256',
                     'flag': 'Sweden',
-                    'system': 'AIS Marine Traffic',
+                    'system': None,
                     'mmsi': '266252000',
                     'source': 'VesselFinder
                 }
 
             Fields that cannot be collected are set to the user specified null value
-            which defaults to None
+            which defaults to None.
+
+            NOTE: The 'system' field cannot be collected
 
 
         Raises:
