@@ -39,6 +39,7 @@ Utilities required for collecting vessel information from a variety of websites
 
 from __future__ import unicode_literals
 
+import json
 import random
 import requests
 import sys
@@ -55,6 +56,7 @@ DEFAULT_RETRY = 3
 DEFAULT_PAUSE = 1
 DEFAULT_PAUSE_MIN = 0
 DEFAULT_PAUSE_MAX = 3
+USER_AGENTS = ['Mozilla/30.0']
 
 
 #/* ======================================================================= */#
@@ -63,8 +65,8 @@ DEFAULT_PAUSE_MAX = 3
 
 class MMSI(object):
 
-    user_agents = ['Mozilla/30.0']
-    scraper_order = ['marine_traffic', 'vessel_finder']
+    # Used in batch mode to determine which order the scrapers should be called
+    scraper_order = ['marine_traffic', 'vessel_finder', 'fleetmon']
 
     # Referenced by batch processing algorithms to prep output CSV for additional fields
     ofields = ['name', 'class', 'callsign', 'imo', 'flag', 'system', 'mmsi', 'source']
@@ -92,12 +94,26 @@ class MMSI(object):
                 user may override with this arg
         """
 
+        global USER_AGENTS
+
         self.mmsi = mmsi
         self.null = null
         if user_agent is None or user_agent.lower() == 'random':
-            self.user_agent = random.choice(self.user_agents)
+            self.user_agent = random.choice(USER_AGENTS)
         else:
             self.user_agent = user_agent
+
+        # Output template for scrapers to dump info into
+        self.output_template = {
+            'name': self.null,
+            'class': self.null,
+            'callsign': self.null,
+            'imo': self.null,
+            'flag': self.null,
+            'system': self.null,
+            'mmsi': self.null,
+            'source': self.null
+        }
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Define marine_traffic() method
@@ -108,13 +124,20 @@ class MMSI(object):
         """
         Scrape MarineTraffic.com/<MMSI> for vessel information
 
+
         Kwargs:
+
             scraper_name (str): Included in output in 'source' key
+
             base_url (str): URL + mmsi = HTML containing vessel information
+
             headers (dict): Request header - defaults to {'User-agent': self.user_agent}
 
+
         Returns:
+
             Failure: None
+
             Success: A dictionary containing the following vessel information:
 
                 {
@@ -131,7 +154,9 @@ class MMSI(object):
             Fields that cannot be collected are set to the user specified null value
             which defaults to None
 
+
         Raises:
+
             requests.exceptions.*: Exceptions can be raised by the initial request
                 but none are suppressed
         """
@@ -165,7 +190,8 @@ class MMSI(object):
         # Found content - extract
         else:
 
-            output = {'source': scraper_name}
+            output = self.output_template.copy()
+            output['source'] = scraper_name
 
             # The comment preceding each extraction explains what it is doing and how it relates to the
             # following example line:
@@ -227,13 +253,20 @@ class MMSI(object):
         """
         Scrape VesselFinder.com/vessels/0-IMO-0-MMSI-<MMSI> for vessel information
 
+
         Kwargs:
+
             scraper_name (str): Included in output in 'source' key
+
             base_url (str): URL + mmsi = HTML containing vessel information
+
             headers (dict): Request header - defaults to {'User-agent': self.user_agent}
 
+
         Returns:
+
             Failure: None
+
             Success: A dictionary containing the following vessel information:
 
                 {
@@ -250,9 +283,13 @@ class MMSI(object):
             Fields that cannot be collected are set to the user specified null value
             which defaults to None
 
+
         Raises:
+
             requests.exceptions.*: Exceptions can be raised by the initial request
                 but none are suppressed
+
+            ValueError: If a BeautifulSoup parse returns unexpected results
         """
 
         scraper_name = kwargs.get('scraper_name', 'VesselFinder')
@@ -291,10 +328,9 @@ class MMSI(object):
 
             # System denotes which tracking system (AIS, VMS, etc.) the vessel's info was extracted from
             # This website does not have system information - set to Null
-            output = {
-                'source': scraper_name,
-                'system': self.null
-            }
+            output = self.output_template.copy()
+            output['source'] = scraper_name
+            output['system'] = self.null
 
             # Populate vessel name
             # soup.title.text = 'NORDLINK - Passenger/Ro-Ro Cargo Ship - Details and current position IMO 9336256 MMSI 266252000 | Vessels | VesselFinder'
@@ -358,12 +394,148 @@ class MMSI(object):
         return output
 
     #/* ----------------------------------------------------------------------- */#
-    #/*     Define ais_hub() method
+    #/*     Define fleetmon() method
     #/* ----------------------------------------------------------------------- */#
 
-    def ais_hub(self):
-        # http://www.aishub.net/ais-hub-vessel-information.html?mmsi=266252000
-        raise NotImplemented
+    def fleetmon(self, **kwargs):
+
+        """
+        Get vessel information from the public FleetMON API
+
+            https://www.fleetmon.com/faq/public_api
+
+
+        Kwargs:
+
+            scraper_name (str): Included in output in 'source' key
+                [default: FleetMON]
+
+            headers (dict): Request header
+                [default: {'User-agent': self.user_agent}]
+
+            api_user (str): FleetMON username with access to public API
+                [default: None]
+
+            api_key (str): API key for api_user
+                [default: None]
+
+            base_url (str): Base API URL - should never need to be specified
+                [default: https://www.fleetmon.com/api/p/personal-v1/vesselurl/]
+
+            callsign (bool): Specify whether or additional scraping should
+                be performed in order to obtain the callsign
+                [default: False]
+
+
+        Returns:
+
+            Failure: None
+
+            Success: A dictionary containing the following vessel information:
+
+                {
+                    'name': 'NORDLINK',
+                    'class': 'Ro-ro/passenger ship',
+                    'callsign': 'SJPW',
+                    'imo': '9336256',
+                    'flag': 'Sweden',
+                    'system': 'AIS Marine Traffic',
+                    'mmsi': '266252000',
+                    'source': 'VesselFinder
+                }
+
+            Fields that cannot be collected are set to the user specified null value
+            which defaults to None
+
+
+        Raises:
+
+            requests.exceptions.*: Exceptions can be raised by the initial request
+                but none are suppressed
+
+            ValueError: If api_user/key is None or f a BeautifulSoup parse returns
+                unexpected results
+        """
+
+        scraper_name = kwargs.get('scraper_name', 'FleetMON')
+        api_key = kwargs.get('api_key', None)
+        api_user = kwargs.get('api_user', None)
+        base_url = kwargs.get('base_url', 'https://www.fleetmon.com/api/p/personal-v1/vesselurl/')
+        headers = kwargs.get('headers', {'User-agent': self.user_agent})
+        get_callsign = kwargs.get('callsign', False)
+        if api_key is None or api_user is None:
+            raise ValueError("api_key/user cannot be None")
+        if base_url[-1] != '/':
+            base_url += '/'
+
+        # Construct API call URL and make request
+        call_url = base_url + '?username=%s&api_key=%s&format=json&mmsi=%s' % (api_user, api_key, self.mmsi)
+        response = requests.get(call_url, headers=headers)
+        response.raise_for_status()
+        json_response = json.loads(response.text)
+        response.close()
+
+        # FleetMON doesn't have the vessel - return nothing
+        if 'error' in json_response or json_response['meta']['total_count'] is 0:
+            output = None
+
+        # API returned multiple results which means an imperfect match - can't do anything
+        elif json_response['meta']['total_count'] > 1:
+            # TODO: Investigate this condition - will FleetMON ever return more than 1?
+            raise ValueError("FleetMON API returned > 1 result")
+
+        # Got everything - parse
+        else:
+
+            # Populate info from the API response
+            output = self.output_template.copy()
+            output['system'] = self.null  # Doesn't specify AIS vs. VMS vs. etc.
+            output['source'] = scraper_name
+            output['name'] = unicode(json_response['objects'][0].get('name', self.null))
+            output['class'] = unicode(json_response['objects'][0].get('type', self.null))
+            output['imo'] = unicode(json_response['objects'][0].get('imo', self.null))
+            output['flag'] = unicode(json_response['objects'][0].get('flag', self.null))
+            output['mmsi'] = unicode(json_response['objects'][0].get('mmsi', self.null))
+            # Callsign defaults to null through the template
+
+            # Attempt to get the callsign by scraping the vessel info page
+            if get_callsign:
+
+                # Rather than pass the exception error to the parent process, just return the output
+                # Raising an exception would fail this entire MMSI just because the callsign could not
+                # be retrieved.  The API response has the most important information and should be
+                # returned regardless
+                response = requests.get(json_response['objects'][0]['publicurl'], headers=headers)
+
+                # Load soup
+                soup = BeautifulSoup(response.text)
+                response.close()
+                vessel_info_table = soup.find_all('table', {'id': 'vessel-related', 'class': 'datasheet'})
+
+                # Could not extract the table containing vessel information from the vessel info page
+                # Return what was collected from the API
+                if not vessel_info_table:
+                    soup = None
+                    return output
+
+                else:
+
+                    # Search through the table elements to find 'Callsign:' - the next cell has the right value
+                    # The FleetMON uses some unicode characters as null values in the table and the decode()
+                    # attempts to find these.  A failed decode means that the cell is null.
+                    for row in vessel_info_table[0].find_all('tr'):
+                        cells = row.find_all('td')
+                        for i, c in enumerate(cells):
+                            if c.label:
+                                if c.text.strip() == 'Callsign:':
+                                    try:
+                                        value = cells[i + 1].text.strip().decode()
+                                    except UnicodeEncodeError:
+                                        value = self.null
+                                    output['callsign'] = value
+
+        soup = None
+        return output
 
 
 #/* ======================================================================= */#
@@ -416,6 +588,14 @@ def auto_scrape(mmsi_scraper, **kwargs):
         ValueError: For all invalid arguments
     """
 
+    # TODO: Investigate the option of performing scrapes for ALL scrapers simultaneously with the multiprocessing
+    #   Would drastically speed up failed vessels, but would slow all scrapes to the speed of the slowest scraper
+
+    global DEFAULT_RETRY
+    global DEFAULT_PAUSE
+    global DEFAULT_PAUSE_MIN
+    global DEFAULT_PAUSE_MAX
+
     # Parse arguments
     retry = kwargs.get('retry', DEFAULT_RETRY)
     stream = kwargs.get('stream', sys.stdout)
@@ -425,6 +605,7 @@ def auto_scrape(mmsi_scraper, **kwargs):
     stream_prefix = kwargs.get('stream_prefix', '')
     keep_scraper = kwargs.get('keep_scraper', None)
     skip_scraper = kwargs.get('skip_scraper', None)
+    all_scraper_options = kwargs.get('scraper_options', {})
     if isinstance(keep_scraper, str):
         keep_scraper = keep_scraper.split(',')
     if isinstance(skip_scraper, str):
@@ -432,6 +613,10 @@ def auto_scrape(mmsi_scraper, **kwargs):
 
     result = None
     for scraper_name in MMSI.scraper_order:
+
+        # The last pass got a result - no need to continue
+        if result is not None:
+            break
 
         # Figure out if this scraper should actually be done
         do_scrape = False
@@ -442,9 +627,8 @@ def auto_scrape(mmsi_scraper, **kwargs):
         elif skip_scraper is not None and scraper_name not in skip_scraper:
             do_scrape = True
 
-        # The last pass got a result - no need to continue
-        if result is not None:
-            break
+        # Get this scraper's options
+        scraper_options = all_scraper_options.get(scraper_name, {})
 
         # Only attempt scrape if the skip/keep conditions say so
         if do_scrape:
@@ -458,7 +642,7 @@ def auto_scrape(mmsi_scraper, **kwargs):
 
                 # Successful scrape - no need to continue trying
                 try:
-                    result = getattr(mmsi_scraper, scraper_name)()
+                    result = getattr(mmsi_scraper, scraper_name)(**scraper_options)
                     if result is not None:
                         break
 

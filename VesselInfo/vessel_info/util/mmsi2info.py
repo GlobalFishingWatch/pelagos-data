@@ -50,6 +50,7 @@ import sys
 
 from .. import scrape
 from .. import settings
+import common
 
 
 #/* ======================================================================= */#
@@ -278,6 +279,7 @@ def main(args):
     input_csv_mmsi_field = 'mmsi'
     output_field_prefix = 'v_'
     overwrite_mode = False
+    process_subsample = False
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Containers
@@ -286,9 +288,31 @@ def main(args):
     input_csv_file = None
     output_csv_file = None
 
-    # Collected from commandline as key=value pars but converted to a dict of
-    # key: value pairs in the argument validation stage
-    auto_scrape_options = []
+    scraper_options = {}
+
+    # Collected from commandline as ['key=value'] pairs but converted to a dictionary during the configuration
+    # validation step.  Options are validated to make sure all required components are present but no checks
+    # are made to ensure that the options are actual real options
+    cmdl_auto_scrape_options = []
+    cmdl_scraper_options = []
+    auto_scrape_options = {}
+    scraper_options = {}
+
+    # auto_scrape_options = {
+    #   'opt1': 'val1',
+    #   'opt2': 'val2'
+    # {
+
+    # scrape_options = {
+    #   'scraper1': {
+    #       'opt1': 'val1',
+    #       'opt2': 'val2'
+    #   },
+    #   'scraper1': {
+    #       'opt1': 'val1',
+    #       'opt2': 'val2'
+    #   }
+    # }
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Parse Arguments
@@ -320,7 +344,10 @@ def main(args):
             # Scraper options
             elif arg == '-ao':
                 i += 2
-                auto_scrape_options.append(args[i - 1])
+                cmdl_auto_scrape_options.append(args[i - 1])
+            elif arg == '-so':
+                i += 2
+                cmdl_scraper_options.append(args[i - 1])
 
             # I/O options
             elif arg == '--overwrite':
@@ -332,6 +359,9 @@ def main(args):
             elif arg in ('-ofp', '--ocsv-field-prefix'):
                 i += 2
                 output_field_prefix = args[i - 1]
+            elif '--subsample=' in arg:
+                i += 1
+                process_subsample = common.string2type(arg.split('=', 1)[1])
 
             # Positional arguments and errors
             else:
@@ -377,9 +407,6 @@ def main(args):
         stream.write("ERROR: Can't access input CSV: %s\n" % input_csv_file)
 
     # Check output CSV
-    _ocsv_dname = dirname(output_csv_file)
-    if _ocsv_dname == '':
-        _ocsv_dname = './'
     if output_csv_file is None:
         bail = True
         stream.write("ERROR: Need an output CSV\n")
@@ -389,37 +416,47 @@ def main(args):
     elif overwrite_mode and isfile(output_csv_file) and not os.access(output_csv_file, os.W_OK):
         bail = True
         stream.write("ERROR: Overwrite=%s but can't access output file: %s\n" % output_csv_file)
-    elif not isfile(output_csv_file) and not os.access(_ocsv_dname, os.W_OK):
-        bail = True
-        stream.write("ERROR: Need write access for output file: %s\n" % output_csv_file)
+    elif not isfile(output_csv_file):
+        dname = dirname(output_csv_file)
+        if dname == '':
+            dname = './'
+        if not os.access(dname, os.W_OK):
+            bail = True
+            stream.write("ERROR: Need write access for output file: %s\n" % output_csv_file)
 
     # Check auto-scrape options
-    _as_options = auto_scrape_options
-    auto_scrape_options = {}
-    for aso in _as_options:
+    for aso in cmdl_auto_scrape_options:
         try:
             option, value = aso.split('=')
-
-            # Force value to Python type
-            if value.lower() == 'true':
-                value = True
-            elif value.lower() == 'false':
-                value = False
-            elif value.lower() == 'none':
-                value = None
-            elif value.isdigit():
-                value = int(value)
-            else:
-                try:
-                    value = float(value)
-                except ValueError:
-                    pass
+            value = common.string2type(value)
 
             # Add to options
             auto_scrape_options[option] = value
         except ValueError:
             bail = True
             stream.write("ERROR: Invalid auto-scrape option: %s\n" % aso)
+    
+    # Check individual scraper options
+    for so in cmdl_scraper_options:
+        try:
+            s_name, key_vals = so.split(':')
+            for kv in key_vals.split(','):
+                option, value = kv.split('=')
+                value = common.string2type(value)
+                if s_name not in scraper_options:
+                    scraper_options[s_name] = {option: value}
+                else:
+                    s_options = scraper_options[s_name]
+                    s_options[option] = value
+                    scraper_options[s_name] = s_options
+        except ValueError:
+            bail = True
+            stream.write("ERROR: Invalid scraper option: %s\n" % so)
+
+    # Check subsample
+    if process_subsample is not None and not isinstance(process_subsample, int) or process_subsample < 1:
+        bail = True
+        stream.write("ERROR: Invalid subsample - must be an int >= 1: %s\n" % process_subsample)
         
     # Exit if an error was encountered
     if bail:
@@ -428,20 +465,23 @@ def main(args):
     #/* ----------------------------------------------------------------------- */#
     #/*     Prepare input and output file
     #/* ----------------------------------------------------------------------- */#
-    
+
     num_rows = 0
-    with open(input_csv_file, 'r') as i_f:
-        reader = csv.DictReader(i_f)
+    if process_subsample is not None:
+        num_rows = process_subsample
+    else:
+        with open(input_csv_file, 'r') as i_f:
+            reader = csv.DictReader(i_f)
 
-        # Make sure the MMSI field is in the input file
-        if input_csv_mmsi_field not in reader.fieldnames:
-            stream.write("ERROR: MMSI field not found in input CSV field names: %s\n")
-            stream.write("       Fields: %s\n" % ', '.join(reader.fieldnames))
-            return 1
+            # Make sure the MMSI field is in the input file
+            if input_csv_mmsi_field not in reader.fieldnames:
+                stream.write("ERROR: MMSI field not found in input CSV field names: %s\n")
+                stream.write("       Fields: %s\n" % ', '.join(reader.fieldnames))
+                return 1
 
-        # Figure out how many rows are in the input file
-        for row in csv.DictReader(i_f):
-            num_rows += 1
+            # Figure out how many rows are in the input file
+            for row in csv.DictReader(i_f):
+                num_rows += 1
 
     # Prep I/O
     stream.write("Preparing input CSV: %s\n" % input_csv_file)
@@ -452,10 +492,15 @@ def main(args):
             ofields = [output_field_prefix + i for i in scrape.MMSI.ofields]
             writer = csv.DictWriter(o_f, fieldnames=reader.fieldnames + ofields)
             writer.writeheader()
+
+            # Get a subsample if necessary
+            if process_subsample is not None:
+                reader = [row for i, row in enumerate(reader) if i <= process_subsample]
             
             # Add some formatting to the auto-scraper output
             auto_scrape_options['stream'] = stream
             auto_scrape_options['stream_prefix'] = '    '
+            auto_scrape_options['scraper_options'] = scraper_options.copy()
             stream.write("Silently processing %s MMSI's unless an error is encountered...\n" % num_rows)
             for row in reader:
 

@@ -32,9 +32,32 @@
 # =========================================================================== #
 
 
-"""Components for commandline utilities
+"""Common components for all commandline utilities
 """
 
 
-import mmsi2info
-import common
+#/* ======================================================================= */#
+#/*     Define string2type() function
+#/* ======================================================================= */#
+
+def string2type(i_val):
+    
+    """
+    Convert an input string to a Python type 
+    """
+    
+    # Force value to Python type
+    try:
+        return int(i_val)
+    except ValueError:
+        try:
+            return float(i_val)
+        except ValueError:
+            if i_val.lower() == 'true':
+                return True
+            elif i_val.lower() == 'false':
+                return False
+            elif i_val.lower() == 'none':
+                return None
+            else:
+                return i_val
