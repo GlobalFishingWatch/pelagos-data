@@ -279,7 +279,7 @@ def main(args):
     input_csv_mmsi_field = 'mmsi'
     output_field_prefix = 'v_'
     overwrite_mode = False
-    process_subsample = False
+    process_subsample = None
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Containers
@@ -467,21 +467,18 @@ def main(args):
     #/* ----------------------------------------------------------------------- */#
 
     num_rows = 0
-    if process_subsample is not None:
-        num_rows = process_subsample
-    else:
-        with open(input_csv_file, 'r') as i_f:
-            reader = csv.DictReader(i_f)
+    with open(input_csv_file, 'r') as i_f:
+        reader = csv.DictReader(i_f)
 
-            # Make sure the MMSI field is in the input file
-            if input_csv_mmsi_field not in reader.fieldnames:
-                stream.write("ERROR: MMSI field not found in input CSV field names: %s\n")
-                stream.write("       Fields: %s\n" % ', '.join(reader.fieldnames))
-                return 1
+        # Make sure the MMSI field is in the input file
+        if input_csv_mmsi_field not in reader.fieldnames:
+            stream.write("ERROR: MMSI field not found in input CSV field names: %s\n")
+            stream.write("       Fields: %s\n" % ', '.join(reader.fieldnames))
+            return 1
 
-            # Figure out how many rows are in the input file
-            for row in csv.DictReader(i_f):
-                num_rows += 1
+        # Figure out how many rows are in the input file
+        for row in csv.DictReader(i_f):
+            num_rows += 1
 
     # Prep I/O
     stream.write("Preparing input CSV: %s\n" % input_csv_file)
@@ -496,6 +493,7 @@ def main(args):
             # Get a subsample if necessary
             if process_subsample is not None:
                 reader = [row for i, row in enumerate(reader) if i <= process_subsample]
+                num_rows = len(reader)
             
             # Add some formatting to the auto-scraper output
             auto_scrape_options['stream'] = stream
