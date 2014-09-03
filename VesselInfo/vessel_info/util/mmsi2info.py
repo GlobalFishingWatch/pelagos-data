@@ -349,13 +349,13 @@ def main(args):
                 # Catch unrecognized arguments
                 else:
                     arg_error = True
-                    stream.write("ERROR: Unrecognized argument: %s" % arg)
+                    stream.write("ERROR: Unrecognized argument: %s\n" % arg)
 
         # An argument with parameters likely didn't iterate 'i' properly
         except IndexError:
             i += 1
             arg_error = True
-            print("ERROR: An argument has invalid parameters - current arg: %s" % arg)
+            print("ERROR: An argument has invalid parameters - current arg: %s\n" % arg)
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Validate configuration / transform arguments

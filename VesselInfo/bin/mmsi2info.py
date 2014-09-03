@@ -39,7 +39,7 @@ Scrape MMSI information for all rows in an input CSV
 
 import sys
 
-from vessel_info.util.mmsi2info import *
+from vessel_info.util.mmsi2info import main, print_usage
 
 
 #/* ======================================================================= */#
