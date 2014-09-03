@@ -280,6 +280,7 @@ def main(args):
     output_field_prefix = 'v_'
     overwrite_mode = False
     process_subsample = None
+    request_timeout = scrape.DEFAULT_TIMEOUT
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Containers
@@ -348,6 +349,9 @@ def main(args):
             elif arg == '-so':
                 i += 2
                 cmdl_scraper_options.append(args[i - 1])
+            elif arg == '--timeout=':
+                i += 1
+                request_timeout = arg.split('=', )[1]
 
             # I/O options
             elif arg == '--overwrite':
@@ -382,7 +386,7 @@ def main(args):
                     stream.write("ERROR: Unrecognized argument: %s\n" % arg)
 
         # An argument with parameters likely didn't iterate 'i' properly
-        except IndexError:
+        except (IndexError, ValueError):
             i += 1
             arg_error = True
             print("ERROR: An argument has invalid parameters - current arg: %s\n" % arg)
@@ -499,6 +503,7 @@ def main(args):
             auto_scrape_options['stream'] = stream
             auto_scrape_options['stream_prefix'] = '    '
             auto_scrape_options['scraper_options'] = scraper_options.copy()
+            auto_scrape_options['timeout'] = request_timeout
             stream.write("Silently processing %s MMSI's unless an error is encountered...\n" % num_rows)
             for row in reader:
 
