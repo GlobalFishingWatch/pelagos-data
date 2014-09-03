@@ -17,7 +17,6 @@ transformers:
       external_name: series
       import_transform: int
       export_transform: datastore.Key.id
-      export_transform: datastore.Key.id
     - property: mmsi
       external_name: mmsi
     - property: source
