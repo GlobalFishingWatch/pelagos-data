@@ -32,10 +32,21 @@
 # =========================================================================== #
 
 
-"""Components for commandline utilities
+"""
+Compare mmsi2info.py output
 """
 
 
-import common
-import compare_scrape
-import mmsi2info
+import sys
+
+from vessel_info.util import compare_scrape
+
+
+#/* ======================================================================= */#
+#/*     Command line execution
+#/* ======================================================================= */#
+
+if __name__ == '__main__':
+
+    # Remove script name and give the rest to main
+    sys.exit(compare_scrape.main(sys.argv[1:]))

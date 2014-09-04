@@ -586,9 +586,4 @@ def main(args):
 if __name__ == '__main__':
 
     # Remove script name and give the rest to main
-    if len(sys.argv) > 1:
-        sys.exit(main(sys.argv[1:]))
-
-    # Didn't get enough arguments - print usage
-    else:
-        sys.exit(print_usage())
+    sys.exit(main(sys.argv[1:]))
