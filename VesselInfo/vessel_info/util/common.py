@@ -44,7 +44,34 @@ from .. import settings
 #/*     Document level attributes
 #/* ======================================================================= */#
 
-__all__ = ['print_version', 'print_short_version', 'print_license', 'string2type']
+__all__ = ['print_version', 'print_short_version', 'print_license', 'print_help_info', 'string2type']
+
+
+#/* ======================================================================= */#
+#/*     Define print_help_info() function
+#/* ======================================================================= */#
+
+def print_help_info():
+
+    """
+    Print a list of help related flags
+
+    :return: returns 1 for for exit code purposes
+    :rtype: int
+    """
+
+    print("""
+Help Flags:
+    --help          More detailed description of this utility
+    --help-info     This printout
+    --license       License information
+    --long-usage    Usage plus brief description of all options
+    --short-version Only the version number
+    --version       Version and ownership information
+    --usage         Arguments, parameters, etc.
+    """)
+
+    return 1
 
 
 #/* ======================================================================= */#

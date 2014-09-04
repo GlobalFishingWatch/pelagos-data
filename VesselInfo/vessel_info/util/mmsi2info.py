@@ -32,14 +32,14 @@
 # =========================================================================== #
 
 
-"""Given a CSV with a field containing an MMSI, give the same CSV back with several
-additional fields:
-
-vessel_name
-vessel_class
-vessel_callsign
-vessel_imo
-vessel_flag
+"""
+Given a CSV with a field containing an MMSI, give the same CSV back with additional
+vessel attributes:
+    name
+    class
+    callsign
+    imo
+    flag
 """
 
 
@@ -50,8 +50,7 @@ from os.path import *
 import sys
 
 from .. import scrape
-from .. import settings
-import common
+from common import *
 
 
 #/* ======================================================================= */#
@@ -59,7 +58,7 @@ import common
 #/* ======================================================================= */#
 
 __docname__ = basename(inspect.getfile(inspect.currentframe()))
-__all__ = ['print_usage', 'print_long_usage', 'print_help', 'print_help_info', 'main']
+__all__ = ['print_usage', 'print_long_usage', 'print_help', 'main']
 
 
 #/* ======================================================================= */#
@@ -83,9 +82,9 @@ def print_usage():
     """
 
     print("""
-{0} [--help-info] [-ss N] [--overwrite] [-im field_name]
+{0} [--help-info] [-ss N] [-op ofield_prefix] [-im field_name]
 {1} [-ao option=value,o=v,...] [-so name:option=value,o=v,...]
-{1} [-op ofield_prefix] input_csv output_csv
+{1} [--overwrite] input_csv output_csv
     """.format(UTIL_NAME, ' ' * len(UTIL_NAME)))
 
     return 1
@@ -170,57 +169,10 @@ def print_help():
     :rtype: int
     """
 
-    print('''
-Help: {0}
-------{1}
-This utility takes an input CSV containing a field of MMSi numbers and attempts
-to find various pieces of information about the vessel.  The input CSV can
-contain any number of fields and the MMSI field can be explicitly defined with
-the '-mfi' flag.  All input fields are preserved but they are re-ordered
-alphabetically and all values are qualified in the output file.
-
-In order to retrieve information, the utility takes an MMSI, pauses for a few
-seconds to act more like a human, and scrapes a website until it gets information
-or until it exhausts the allotted number of retries.  If the scrape retrieved
-information from the very first website, it skips the rest adds the information
-to the output CSV.  If all retries were exhausted for the first website, it
-attempts to scrape the second, and so on.  The following websites are scraped
-in this order:
-
-  1. MarineTraffic.com
-
-The pause between scrape attempts can be done in two ways.  By default the utility
-waits somewhere between 0.1 and 3 seconds between scrape attempts but an explicit
-pause value can be set with the '--pause' option.  This pause can also be completely
-turned off with '--pause 0'.
-    '''.format(UTIL_NAME, '-' * len(UTIL_NAME)))
-
-    return 1
-
-
-#/* ======================================================================= */#
-#/*     Define print_help_info() function
-#/* ======================================================================= */#
-
-def print_help_info():
-
-    """
-    Print a list of help related flags
-
-    :return: returns 1 for for exit code purposes
-    :rtype: int
-    """
-
     print("""
-Help Flags:
-    --help          More detailed description of this utility
-    --help-info     This printout
-    --license       License information
-    --long-usage    Usage plus brief description of all options
-    --short-version Only the version number
-    --version       Version and ownership information
-    --usage         Arguments, parameters, etc.
-    """)
+Help: {0}
+------{1}""".format(UTIL_NAME, '-' * len(UTIL_NAME)))
+    print(main.__doc__)
 
     return 1
 
@@ -232,13 +184,80 @@ Help Flags:
 def main(args):
 
     """
-    Commandline logic
+Given a CSV file with a field containing MMSI values, automatically scrape all
+supported websites for additional vessel information.  An attempt to scrape each
+website is made 3 times by default unless a successful scrape happens before
+then.  A pause between scrape attempts occurs in order to prevent overloading
+the sites being scraped.  By default this value is 3 seconds but can be specified
+if needed.
 
-    :param args: arguments gathered from the commandline (sys.argv[1:])
-    :type args: list
+If a successful scrape does not occur and multiple scrapers are to be used,
+then the next scraper in the list attempts to retrieve information.  Null values
+are written if all scrapers fail for a given MMSI.  Additional fields present in
+the input CSV are preserved in the output CSV.  A test is performed to ensure
+that none of these fields will be overwritten, but if this test fails the user
+can add a prefix to the output fields with the '-output-prefix' flag.  For
+example, if the input CSV already has a 'callsign' field the user can specify
+create a unique name with '-output-prefix vessel_'
 
-    :return: returns 0 on success and 1 on error
-    :rtype: int
+By default a 'v_' is prepended to the additional output fields.  This can be
+turned off with '--output-prefix ""'
+
+The number of retries and which scrapers to use can be specified via the
+'-auto-option' flag.  For more information about the scraper order and options
+see the usage information.
+
+
+Exit codes:
+    0 on success
+    1 on failure
+
+
+Examples
+--------
+
+All scrapers with default settings:
+
+    $ mmsi2info.py \\
+        Input_MMSI.csv \\
+        Output.csv
+
+
+All scrapers but specify a different output field prefix and input MMSI field:
+
+    $ mmsi2info.py \\
+        -mf Vessel_MMSI \\
+        -op vessel_ \\
+        Input_MMSI.csv \\
+        Output.csv
+
+
+All scrapers but specify a different number of retries, scraper order, and pause:
+
+    $ mmsi2info.py \\
+        -mf Vessel_MMSI \\
+        -op vessel_ \\
+        -ao retry=10 \\
+        -ao scraper_order=fleetmon,marine_traffic,vessel_finder \\
+        -ao pause=1
+        Input_MMSI.csv \\
+        Output.csv
+
+
+Same as above but only use FleetMON:
+    $ mmsi2info.py \\
+        -mf Vessel_MMSI \\
+        -op vessel_ \\
+        -ao retry=10,scraper_order=fleetmon,pause=1 \\
+        Input_MMSI.csv \\
+        Output.csv
+
+
+All scrapers but give FleetMON a timeout value and the required API user and key:
+    $ mmsi2info.py \\
+        -so fleetmon:api_user=fm_user,api_key=fm_key,timeout=100 \\
+        Input_MMSI.csv \\
+        Output.csv
     """
 
     # Check arguments
@@ -289,11 +308,11 @@ def main(args):
             elif arg in ('--help-info', '-help-info', '--helpinfo', '--helpinfo', '-h'):
                 return print_help_info()
             elif arg in ('--license', '-license'):
-                return common.print_license()
+                return print_license()
             elif arg in ('--version', '-version'):
-                return common.print_version()
+                return print_version()
             elif arg in ('--short-version', '-short-version'):
-                return common.print_short_version()
+                return print_short_version()
             elif arg in ('--usage', '-usage'):
                 return print_usage()
             elif arg in ('--long-usage', '-long-usage'):
@@ -319,7 +338,7 @@ def main(args):
                 output_field_prefix = args[i - 1]
             elif arg in ('-ss', '-subsample'):
                 i += 2
-                process_subsample = common.string2type(args[i - 1].split('=', 1)[1])
+                process_subsample = string2type(args[i - 1].split('=', 1)[1])
 
             # Positional arguments and errors
             else:
@@ -395,7 +414,7 @@ def main(args):
         try:
             for kv in aso.split(','):
                 option, value = kv.split('=', 1)
-                value = common.string2type(value)
+                value = string2type(value)
                 if value not in scrape.auto_scrape(None, _get_options=True).keys():
                     bail = True
                     stream.write("ERROR: Unrecognized auto-scrape option: %s" % kv)
@@ -426,7 +445,7 @@ def main(args):
             s_name, key_vals = so.split(':')
             for kv in key_vals.split(','):
                 option, value = kv.split('=')
-                value = common.string2type(value)
+                value = string2type(value)
                 if option not in scrape.MMSI.scraper_options.keys():
                     bail = True
                     stream.write("ERROR: Invalid option for scraper '%s': %s" % (s_name, kv))
