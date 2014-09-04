@@ -73,8 +73,8 @@ def print_usage():
     """
 
     print("""
-{0} [--usage] [-mf mmsi_field] [-if imo_field]  [-omf o_mmsi_field]
-{1} input_csv1 input_csv2 [input_csv...] output_file
+{0} [--usage] [-mf mmsi_field] [-cf compare_field]  [-omf o_mmsi_field]
+{1} [--overwrite] input_csv1 input_csv2 [input_csv...] output_file
     """.format(UTIL_NAME, ' ' * len(UTIL_NAME)))
 
     return 1
@@ -116,7 +116,7 @@ def main(args):
     #/* ----------------------------------------------------------------------- */#
 
     mmsi_field = 'mmsi'
-    imo_field = 'v_imo'
+    compare_field = 'v_imo'
     o_mmsi_field = 'mmsi'
     overwrite_mode = False
 
@@ -143,9 +143,9 @@ def main(args):
             if arg in ('-mf', '-mmsi-field'):
                 i += 2
                 mmsi_field = args[i - 1]
-            elif arg in ('-if', '-imo-field'):
+            elif arg in ('-cf', '-compare-field'):
                 i += 2
-                imo_field = args[i - 1]
+                compare_field = args[i - 1]
 
             # Configure output file
             elif arg in ('-omf', '-ommsi-field'):
@@ -199,9 +199,9 @@ def main(args):
                 if mmsi_field not in reader.fieldnames:
                     bail = True
                     print("ERROR: Input file missing MMSI field '%s': %s" % (mmsi_field, ifile))
-                if imo_field not in reader.fieldnames:
+                if compare_field not in reader.fieldnames:
                     bail = True
-                    print("ERROR: Input file missing IMO field '%s': %s" % (imo_field, ifile))
+                    print("ERROR: Input file missing compare field '%s': %s" % (compare_field, ifile))
 
     # Check output file
     if output_csv_file is None:
@@ -275,15 +275,15 @@ def main(args):
             prog_i += 1
             sys.stdout.write("\r\x1b[K" + "    %s/%s" % (str(prog_i), str(prog_max)))
             sys.stdout.flush()
-            imo_compare = []
+            compare_list = []
             for ifile in input_csv_files:
                 try:
-                    imo = cache[ifile][mmsi][imo_field]
-                    if imo:
-                        imo_compare.append(imo)
+                    compare_val = cache[ifile][mmsi][compare_field]
+                    if compare_val:
+                        compare_list.append(compare_val)
                 except KeyError:
                     pass
-            if imo_compare and len(set(imo_compare)) is not 1:
+            if compare_list and len(set(compare_list)) is not 1:
                 no_match_count += 1
                 writer.writerow({o_mmsi_field: mmsi})
     print(" - Done")
