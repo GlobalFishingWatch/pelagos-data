@@ -45,3 +45,4 @@ from os import sep
 marine_traffic_20k = abspath(dirname(__file__)) + sep + 'MarineTraffic_20k.csv'
 vessel_finder_20k = abspath(dirname(__file__)) + sep + 'VesselFinder_20k.csv'
 fleetmon_20k = abspath(dirname(__file__)) + sep + 'FleetMON_20k.csv'
+unclassified_mmsi_20k = abspath(dirname(__file__)) + sep + 'unclassified_mmsi_20k.csv'
