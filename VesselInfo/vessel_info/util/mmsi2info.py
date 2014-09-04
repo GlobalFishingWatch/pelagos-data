@@ -44,6 +44,7 @@ vessel_flag
 
 
 import csv
+import inspect
 import os
 from os.path import *
 import sys
@@ -57,7 +58,7 @@ import common
 #/*     Define document level information
 #/* ======================================================================= */#
 
-__docname__ = basename(__file__)
+__docname__ = basename(inspect.getfile(inspect.currentframe()))
 __all__ = ['print_usage', 'print_long_usage', 'print_help', 'print_license', 'print_help_info',
            'print_version', 'print_version', 'main']
 
@@ -83,8 +84,9 @@ def print_usage():
     """
 
     print("""
-Usage:
-    {0} [options]
+{0} [--help-info] [-ss N] [--overwrite] [-im field_name]
+{1} [-ao option=value,o=v,...] [-so name:option=value,o=v,...]
+{1} [-op ofield_prefix] input_csv output_csv
     """.format(UTIL_NAME, ' ' * len(UTIL_NAME)))
 
     return 1
@@ -105,28 +107,53 @@ def print_long_usage():
 
     print_usage()
     print("""Options:
-    -mfi --mmsi-field-name      Specify the field in the input csv
-                                that contains the MMSI numbers
-                                [default: mmsi]
-    --overwrite                 Blindly overwrite the output file
-    -r --retry                  Number of scrape retry attempts
-                                [default: 3]
-    -nh --no-human              Don't act like a human when scraping
-                                Causes delay to be the pause value
-    -p --pause                  Explicitly set the delay between
-                                scrape attempts
-                                [default: 0.5]
-    -ua --user-agent            Specify the user agent for the request
-                                [default: Mozilla/30.0]
-    -onull --ocsv-null          Set the null value for the output CSV
-                                [default: '']
-    -s --subsample              Only process part of the input file
-
-Scrapers:
-    --no-marine-traffic         Don't scrape MarineTraffic.com
-    --marine-traffic-url        Set the Marine Traffic base URL
-                                [default: http://www.marinetraffic.com/en/ais/details/ships/]
+    -ao -auto-option    Options to be passed to the engine that drives the
+                        scraping process
+    -so -scraper-option Options to be passed to specific scrapers
+    -mf -mmsi-field     Specify which field in the input_csv contains the
+                        MMSI values
+                        [default: mmsi]
+    -op -output-prefix  Vessel information collected by the scrapers is appended
+                        to the input_csv so in order to prevent any fields from
+                        being overwritten a prefix for the new output fields can
+                        be specified
+                        [default: v_]
+    -ss -subsample      Only process N rows of the input file
+    --overwrite         Blindly overwrite the output file if it exists
     """.format(UTIL_NAME, ' ' * len(UTIL_NAME)))
+
+    # Print the scraper order
+    print("Default Scraper Order:")
+    for i, sname in enumerate(scrape.MMSI.scraper_order):
+        print("    %s. %s" % (i + 1, sname))
+    print("")
+
+    # Add auto options
+    print("Auto Options:")
+    auto_options = scrape.auto_scrape(None, _get_options=True)
+    a_keys = auto_options.keys()
+    a_keys.sort()
+    max_opt = max([len(i) for i in a_keys])
+    for opt in a_keys:
+        pad = ' ' * (max_opt - len(opt))
+        print("    %s%s %s" % (opt, pad, auto_options[opt]))
+    print("")
+
+    # Add scraper options
+    print("Scraper Options:")
+    scraper_options = scrape.MMSI.scraper_options
+    scrapers = scraper_options.keys()
+    scrapers.sort()
+    for sname in scrapers:
+        print("    %s" % sname)
+        s_options = scraper_options[sname]
+        s_keys = s_options.keys()
+        s_keys.sort()
+        max_opt = max([len(i) for i in s_keys])
+        for opt in s_keys:
+            pad = ' ' * (max_opt - len(opt))
+            print("        %s%s %s" % (opt, pad, s_options[opt]))
+        print("")
 
     return 1
 
@@ -205,13 +232,13 @@ def print_help_info():
 
     print("""
 Help Flags:
-    --help-info     This printout
     --help          More detailed description of this utility
-    --usage         Arguments, parameters, etc.
-    --long-usage    Usage plus brief description of all options
-    --version       Version and ownership information
-    --short-version Only the version number
+    --help-info     This printout
     --license       License information
+    --long-usage    Usage plus brief description of all options
+    --short-version Only the version number
+    --version       Version and ownership information
+    --usage         Arguments, parameters, etc.
     """)
 
     return 1
@@ -249,7 +276,7 @@ def print_version():
     """
 
     print("""
-%s v%s - released %s
+%s v%s released %s
     """ % (UTIL_NAME, settings.__version__, settings.__release__))
 
     return 1
@@ -271,6 +298,10 @@ def main(args):
     :rtype: int
     """
 
+    # Check arguments
+    if len(args) is 0:
+        return print_usage()
+
     #/* ----------------------------------------------------------------------- */#
     #/*     Defaults
     #/* ----------------------------------------------------------------------- */#
@@ -280,7 +311,6 @@ def main(args):
     output_field_prefix = 'v_'
     overwrite_mode = False
     process_subsample = None
-    request_timeout = scrape.DEFAULT_TIMEOUT
     print_progress = True
 
     #/* ----------------------------------------------------------------------- */#
@@ -290,8 +320,6 @@ def main(args):
     input_csv_file = None
     output_csv_file = None
 
-    scraper_options = {}
-
     # Collected from commandline as ['key=value'] pairs but converted to a dictionary during the configuration
     # validation step.  Options are validated to make sure all required components are present but no checks
     # are made to ensure that the options are actual real options
@@ -300,27 +328,12 @@ def main(args):
     auto_scrape_options = {}
     scraper_options = {}
 
-    # auto_scrape_options = {
-    #   'opt1': 'val1',
-    #   'opt2': 'val2'
-    # {
-
-    # scrape_options = {
-    #   'scraper1': {
-    #       'opt1': 'val1',
-    #       'opt2': 'val2'
-    #   },
-    #   'scraper1': {
-    #       'opt1': 'val1',
-    #       'opt2': 'val2'
-    #   }
-    # }
-
     #/* ----------------------------------------------------------------------- */#
     #/*     Parse Arguments
     #/* ----------------------------------------------------------------------- */#
 
     i = 0
+    arg = None
     arg_error = False
     while i < len(args):
 
@@ -340,33 +353,30 @@ def main(args):
                 return print_short_version()
             elif arg in ('--usage', '-usage'):
                 return print_usage()
-            elif arg in ('--long-usage', '-long-usage', '-lu'):
+            elif arg in ('--long-usage', '-long-usage'):
                 return print_long_usage()
 
             # Scraper options
-            elif arg == '-ao':
+            elif arg in ('-ao', '-auto-option'):
                 i += 2
                 cmdl_auto_scrape_options.append(args[i - 1])
-            elif arg == '-so':
+            elif arg in ('-so', '-scraper-option'):
                 i += 2
                 cmdl_scraper_options.append(args[i - 1])
-            elif arg == '--timeout=':
-                i += 1
-                request_timeout = arg.split('=', )[1]
 
             # I/O options
-            elif arg == '--overwrite':
+            elif arg in ('-overwrite', '--overwrite'):
                 i += 1
                 overwrite_mode = True
-            elif arg in ('-imf', '--icsv-mmsi-field'):
+            elif arg in ('-mf', '-mmsi-field'):
                 i += 2
                 input_csv_mmsi_field = args[i - 1]
-            elif arg in ('-ofp', '--ocsv-field-prefix'):
+            elif arg in ('-op', '-output-prefix'):
                 i += 2
                 output_field_prefix = args[i - 1]
-            elif '--subsample=' in arg:
-                i += 1
-                process_subsample = common.string2type(arg.split('=', 1)[1])
+            elif arg in ('-ss', '-subsample'):
+                i += 2
+                process_subsample = common.string2type(args[i - 1].split('=', 1)[1])
 
             # Positional arguments and errors
             else:
@@ -429,34 +439,66 @@ def main(args):
             bail = True
             stream.write("ERROR: Need write access for output file: %s\n" % output_csv_file)
 
-    # Check auto-scrape options
+    # Check auto-scrape options.  Input is a lsit of strings meeting one of the following specifications
+    # option1=val1
+    # option1=val1,option2=val2
+    #
+    # Resulting dict:
+    #   auto_scrape_options = {
+    #      'opt1': 'val1',
+    #      'opt2': 'val2'
+    #   {
     for aso in cmdl_auto_scrape_options:
         try:
-            option, value = aso.split('=')
-            value = common.string2type(value)
-
-            # Add to options
-            auto_scrape_options[option] = value
+            for kv in aso.split(','):
+                option, value = kv.split('=', 1)
+                value = common.string2type(value)
+                if value not in scrape.auto_scrape(None, _get_options=True).keys():
+                    bail = True
+                    stream.write("ERROR: Unrecognized auto-scrape option: %s" % kv)
+                else:
+                    auto_scrape_options[option] = value
         except ValueError:
             bail = True
-            stream.write("ERROR: Invalid auto-scrape option: %s\n" % aso)
+            stream.write("ERROR: Auto-scrape option does not meet specification: %s\n" % aso)
+            stream.write("       option1=val1,option2=val2\n")
     
-    # Check individual scraper options
+    # Check individual scraper options.  Input is a list of strings meeting one of the following specifications:
+    # scraper_name:option1=val1
+    # scraper_name:option1=val1,option2=val2
+    #
+    # Resulting dict:
+    #    scrape_options = {
+    #      'scraper1': {
+    #          'opt1': 'val1',
+    #          'opt2': 'val2'
+    #      },
+    #      'scraper1': {
+    #          'opt1': 'val1',
+    #          'opt2': 'val2'
+    #      }
+    #    }
     for so in cmdl_scraper_options:
         try:
             s_name, key_vals = so.split(':')
             for kv in key_vals.split(','):
                 option, value = kv.split('=')
                 value = common.string2type(value)
-                if s_name not in scraper_options:
-                    scraper_options[s_name] = {option: value}
+                if option not in scrape.MMSI.scraper_options.keys():
+                    bail = True
+                    stream.write("ERROR: Invalid option for scraper '%s': %s" % (s_name, kv))
+                # Valid option - add to scraper options
                 else:
-                    s_options = scraper_options[s_name]
-                    s_options[option] = value
-                    scraper_options[s_name] = s_options
+                    if s_name not in scraper_options:
+                        scraper_options[s_name] = {option: value}
+                    else:
+                        s_options = scraper_options[s_name]
+                        s_options[option] = value
+                        scraper_options[s_name] = s_options
         except ValueError:
             bail = True
-            stream.write("ERROR: Invalid scraper option: %s\n" % so)
+            stream.write("ERROR: Scraper option does not meet specification: %s\n" % so)
+            stream.write("       scraper_name:option1=val1,option2=val2\n")
 
     # Check subsample
     if process_subsample is not None and not isinstance(process_subsample, int) or process_subsample is not None and process_subsample < 1:
@@ -504,12 +546,12 @@ def main(args):
             auto_scrape_options['stream'] = stream
             auto_scrape_options['stream_prefix'] = '    '
             auto_scrape_options['scraper_options'] = scraper_options.copy()
-            auto_scrape_options['timeout'] = request_timeout
-            #stream.write("Silently processing %s MMSI's unless an error is encountered...\n" % num_rows)
-            #stream.write("Processing...\n" % num_rows)
+            # TODO: User feedback: stream.write("Silently processing %s MMSI's unless an error is encountered...\n" % num_rows)
+            # TODO: User feedback: stream.write("Processing...\n" % num_rows)
             prog_i = 0
             for row in reader:
 
+                # TODO: User feedback
                 if print_progress:
                     prog_i += 1
                     stream.write("\r\x1b[K" + "    %s/%s - MMSI: %s" % (str(prog_i), str(num_rows), row[input_csv_mmsi_field]))

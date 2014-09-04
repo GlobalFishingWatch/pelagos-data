@@ -56,7 +56,7 @@ DEFAULT_RETRY = 3
 DEFAULT_PAUSE = 1
 DEFAULT_PAUSE_MIN = 0
 DEFAULT_PAUSE_MAX = 3
-DEFAULT_TIMEOUT = 2
+DEFAULT_TIMEOUT = 30
 USER_AGENTS = ['Mozilla/30.0']
 
 
@@ -66,18 +66,59 @@ USER_AGENTS = ['Mozilla/30.0']
 
 class MMSI(object):
 
+    """
+    Load an MMSI and scrape vessel info from various sources
+    """
+
+    # Used to build documentation and to check validity of scraper options
+    scraper_options = {
+        'marine_traffic': {
+            'name': "(str): Scraper identifier - placed in output 'source' field",
+            'base_url': "(str): Root URL to which parameters are appended",
+            'headers': "(dict): Header parameter for each scrape request",
+            'timeout': "(int): Number of seconds to wait until a scrape request is considered a failure"
+        },
+        'vessel_finder': {
+            'name': "(str): Scraper identifier - placed in output 'source' field",
+            'base_url': "(str): Root URL to which parameters are appended",
+            'headers': "(dict): Header parameter for each scrape request",
+            'timeout': "(int): Number of seconds to wait until a scrape request is considered a failure"
+        },
+        'fleetmon': {
+            'name': "(str): Scraper identifier - placed in output 'source' field",
+            'base_url': "(str): Root URL to which parameters are appended",
+            'headers': "(dict): Header parameter for each scrape request",
+            'api_key': "(str): FleetMON API key matching api_user",
+            'api_user': "(str): FleetMON username matching api_key",
+            'callsign': "(bool): Set to 'True' to enable callsign scraping",
+            'timeout': "(int): Number of seconds to wait until a scrape request is considered a failure"
+        }
+    }
+
     # Used in batch mode to determine which order the scrapers should be called
     scraper_order = ['marine_traffic', 'vessel_finder', 'fleetmon']
 
     # Referenced by batch processing algorithms to prep output CSV for additional fields
     ofields = ['name', 'class', 'callsign', 'imo', 'flag', 'system', 'mmsi', 'source']
 
+    #/* ----------------------------------------------------------------------- */#
+    #/*     Define __repr__() method
+    #/* ----------------------------------------------------------------------- */#
+
     def __repr__(self):
         return "%s(%s, user_agent=%s, null=%s, timeout=%s)" \
                % (self.__class__.__name__, self.mmsi, self.user_agent, self.null, self.timeout)
 
+    #/* ----------------------------------------------------------------------- */#
+    #/*     Define __str__() method
+    #/* ----------------------------------------------------------------------- */#
+
     def __str__(self):
         return self.__repr__()
+
+    #/* ----------------------------------------------------------------------- */#
+    #/*     Define __init__() method
+    #/* ----------------------------------------------------------------------- */#
 
     def __init__(self, mmsi, user_agent=None, null=None, timeout=DEFAULT_TIMEOUT):
 
@@ -129,7 +170,7 @@ class MMSI(object):
 
         Kwargs:
 
-            scraper_name (str): Included in output in 'source' key
+            name (str): Included in output in 'source' key
 
             base_url (str): URL + mmsi = HTML containing vessel information
 
@@ -163,15 +204,16 @@ class MMSI(object):
                 but none are suppressed
         """
 
-        scraper_name = kwargs.get('scraper_name', 'MarrineTraffic')
+        name = kwargs.get('name', 'MarrineTraffic')
         base_url = kwargs.get('base_url', 'http://www.marinetraffic.com/en/ais/details/ships/')
         headers = kwargs.get('headers', {'User-agent': self.user_agent})
+        timeout = kwargs.get('timeout', self.timeout)
 
         if base_url[-1] != '/':
             base_url += '/'
 
         # Make request and check for errors
-        response = requests.get(base_url + self.mmsi, headers=headers)
+        response = requests.get(base_url + self.mmsi, timeout=timeout, headers=headers)
         response.raise_for_status()
 
         # Load HTML into beautiful soup and then parse all meta tags trying to find:
@@ -193,7 +235,7 @@ class MMSI(object):
         else:
 
             output = self.output_template.copy()
-            output['source'] = scraper_name
+            output['source'] = name
 
             # The comment preceding each extraction explains what it is doing and how it relates to the
             # following example line:
@@ -258,7 +300,7 @@ class MMSI(object):
 
         Kwargs:
 
-            scraper_name (str): Included in output in 'source' key
+            name (str): Included in output in 'source' key
 
             base_url (str): URL + mmsi = HTML containing vessel information
 
@@ -296,16 +338,17 @@ class MMSI(object):
             ValueError: If a BeautifulSoup parse returns unexpected results
         """
 
-        scraper_name = kwargs.get('scraper_name', 'VesselFinder')
+        name = kwargs.get('name', 'VesselFinder')
         base_url = kwargs.get('base_url', 'http://www.vesselfinder.com/vessels/')
         headers = kwargs.get('headers', {'User-agent': self.user_agent})
+        timeout = kwargs.get('timeout', self.timeout)
 
         if base_url[-1] != '/':
             base_url += '/'
 
         # Make request and check for errors
         request_url = base_url + '0-IMO-0-MMSI-%s' % self.mmsi
-        response = requests.get(request_url, headers=headers)
+        response = requests.get(request_url, timeout=timeout, headers=headers)
         response.raise_for_status()
 
         # Load HTML into beautiful soup and then parse all meta tags trying to find:
@@ -333,7 +376,7 @@ class MMSI(object):
             # System denotes which tracking system (AIS, VMS, etc.) the vessel's info was extracted from
             # This website does not have system information - set to Null
             output = self.output_template.copy()
-            output['source'] = scraper_name
+            output['source'] = name
             output['system'] = self.null
 
             # Populate vessel name
@@ -411,7 +454,7 @@ class MMSI(object):
 
         Kwargs:
 
-            scraper_name (str): Included in output in 'source' key
+            name (str): Included in output in 'source' key
                 [default: FleetMON]
 
             headers (dict): Request header
@@ -463,12 +506,13 @@ class MMSI(object):
                 unexpected results
         """
 
-        scraper_name = kwargs.get('scraper_name', 'FleetMON')
+        name = kwargs.get('name', 'FleetMON')
         api_key = kwargs.get('api_key', None)
         api_user = kwargs.get('api_user', None)
         base_url = kwargs.get('base_url', 'https://www.fleetmon.com/api/p/personal-v1/vesselurl/')
         headers = kwargs.get('headers', {'User-agent': self.user_agent})
         get_callsign = kwargs.get('callsign', False)
+        timeout = kwargs.get('timeout', self.timeout)
         if api_key is None or api_user is None:
             raise ValueError("api_key/user cannot be None")
         if base_url[-1] != '/':
@@ -476,7 +520,7 @@ class MMSI(object):
 
         # Construct API call URL and make request
         call_url = base_url + '?username=%s&api_key=%s&format=json&mmsi=%s' % (api_user, api_key, self.mmsi)
-        response = requests.get(call_url, headers=headers)
+        response = requests.get(call_url, timeout=timeout, headers=headers)
         response.raise_for_status()
         json_response = json.loads(response.text)
         response.close()
@@ -496,7 +540,7 @@ class MMSI(object):
             # Populate info from the API response
             output = self.output_template.copy()
             output['system'] = self.null  # Doesn't specify AIS vs. VMS vs. etc.
-            output['source'] = scraper_name
+            output['source'] = name
             output['name'] = unicode(json_response['objects'][0].get('name', self.null))
             output['class'] = unicode(json_response['objects'][0].get('type', self.null))
             output['imo'] = unicode(json_response['objects'][0].get('imo', self.null))
@@ -511,7 +555,11 @@ class MMSI(object):
                 # Raising an exception would fail this entire MMSI just because the callsign could not
                 # be retrieved.  The API response has the most important information and should be
                 # returned regardless
-                response = requests.get(json_response['objects'][0]['publicurl'], headers=headers)
+                try:
+                    response = requests.get(json_response['objects'][0]['publicurl'],
+                                            timeout=self.timeout, headers=headers)
+                except Exception:
+                    return output
 
                 # Load soup
                 soup = BeautifulSoup(response.text)
@@ -548,7 +596,7 @@ class MMSI(object):
 #/*     Define auto_scrape() function
 #/* ======================================================================= */#
 
-def auto_scrape(mmsi_scraper, **kwargs):
+def auto_scrape(mmsi_scraper, _get_options=False, **kwargs):
 
     """
     Keep trying a scraper until a result is returned or all retries are exhausted.
@@ -594,6 +642,19 @@ def auto_scrape(mmsi_scraper, **kwargs):
         ValueError: For all invalid arguments
     """
 
+    # Used in documentation building
+    _auto_options = {
+        'retry': "(int): Number of retry attempt for each scraper",
+        'pause': "(int|float|'random'): Num of seconds to pause between each scrape",
+        'pause_min': "(int): Min number of seconds to pause when pause=random",
+        'pause_max': "(int): Max number of seconds to pause when pause=random",
+        'keep_scraper': "(list|tuple|str,str): Only run listed scrapers",
+        'skip_scraper': "(list|tuple|str,str): Skip listed scrapers",
+        'scraper_order': "(list|tuple|str,str): The order in which all scrapers are processed"
+    }
+    if _get_options:
+        return _auto_options
+
     # TODO: Investigate the option of performing scrapes for ALL scrapers simultaneously with the multiprocessing
     #   Would drastically speed up failed vessels, but would slow all scrapes to the speed of the slowest scraper
 
@@ -613,13 +674,16 @@ def auto_scrape(mmsi_scraper, **kwargs):
     skip_scraper = kwargs.get('skip_scraper', None)
     all_scraper_options = kwargs.get('scraper_options', {})
     verbose = kwargs.get('verbose', False)
-    if isinstance(keep_scraper, str):
+    scraper_order = kwargs.get('scraper_order', MMSI.scraper_order)
+    if isinstance(scraper_order, (str, unicode)):
+        scraper_order = scraper_order.split(',')
+    if isinstance(keep_scraper, (str, unicode)):
         keep_scraper = keep_scraper.split(',')
-    if isinstance(skip_scraper, str):
+    if isinstance(skip_scraper, (str, unicode)):
         skip_scraper = skip_scraper.split(',')
 
     result = None
-    for scraper_name in MMSI.scraper_order:
+    for name in scraper_order:
 
         # The last pass got a result - no need to continue
         if result is not None:
@@ -629,13 +693,13 @@ def auto_scrape(mmsi_scraper, **kwargs):
         do_scrape = False
         if keep_scraper is None and skip_scraper is None:
             do_scrape = True
-        elif keep_scraper is not None and scraper_name in keep_scraper:
+        elif keep_scraper is not None and name in keep_scraper:
             do_scrape = True
-        elif skip_scraper is not None and scraper_name not in skip_scraper:
+        elif skip_scraper is not None and name not in skip_scraper:
             do_scrape = True
 
         # Get this scraper's options
-        scraper_options = all_scraper_options.get(scraper_name, {})
+        scraper_options = all_scraper_options.get(name, {})
 
         # Only attempt scrape if the skip/keep conditions say so
         if do_scrape:
@@ -649,7 +713,7 @@ def auto_scrape(mmsi_scraper, **kwargs):
 
                 # Successful scrape - no need to continue trying
                 try:
-                    result = getattr(mmsi_scraper, scraper_name)(**scraper_options)
+                    result = getattr(mmsi_scraper, name)(**scraper_options)
                     if result is not None:
                         break
 
@@ -665,7 +729,7 @@ def auto_scrape(mmsi_scraper, **kwargs):
                         status_string = "MMSI: %s  %s  attempt %s/%s: %s\n"
 
                     if verbose:
-                        stream.write(stream_prefix + status_string % (mmsi_scraper.mmsi, scraper_name,
+                        stream.write(stream_prefix + status_string % (mmsi_scraper.mmsi, name,
                                                                       attempt_num, retry, e))
 
     return result
