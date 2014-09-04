@@ -37,6 +37,70 @@
 
 
 import json
+from .. import settings
+
+
+#/* ======================================================================= */#
+#/*     Document level attributes
+#/* ======================================================================= */#
+
+__all__ = ['print_version', 'print_short_version', 'print_license', 'string2type']
+
+
+#/* ======================================================================= */#
+#/*     Define print_license() function
+#/* ======================================================================= */#
+
+def print_license():
+
+    """
+    Print licensing information
+
+    :return: returns 1 for for exit code purposes
+    :rtype: int
+    """
+
+    print(settings.__license__)
+
+    return 1
+
+
+#/* ======================================================================= */#
+#/*     Define print_version() function
+#/* ======================================================================= */#
+
+def print_short_version():
+
+    """
+    Only print the module version
+
+    :return: returns 1 for for exit code purposes
+    :rtype: int
+    """
+
+    print(settings.__version__)
+
+    return 1
+
+
+#/* ======================================================================= */#
+#/*     Define print_version() function
+#/* ======================================================================= */#
+
+def print_version():
+
+    """
+    Print the module version and release date
+
+    :return: returns 1 for for exit code purposes
+    :rtype: int
+    """
+
+    print("""
+%s v%s released %s
+    """ % (settings.__module_name__, settings.__version__, settings.__release__))
+
+    return 1
 
 
 #/* ======================================================================= */#

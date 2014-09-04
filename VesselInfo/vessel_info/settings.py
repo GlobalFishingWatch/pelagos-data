@@ -32,7 +32,8 @@
 # =========================================================================== #
 
 
-"""Module-wide settings and options
+"""
+Module-wide settings and options
 """
 
 
@@ -40,10 +41,12 @@
 #/*     Build Information
 #/* ======================================================================= */#
 
+__module_name__ = 'VesselInfo'
 __version__ = '0.1-dev'
 __release__ = '2014-09-02'
 __author__ = 'Kevin Wurster'
-__license__ = '''
+__source__ = 'https://github.com/SkyTruth/pelagos-data/'
+__license__ = """
 The MIT License (MIT)
 
 Copyright (c) 2014 SkyTruth
@@ -65,4 +68,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""

@@ -59,8 +59,7 @@ import common
 #/* ======================================================================= */#
 
 __docname__ = basename(inspect.getfile(inspect.currentframe()))
-__all__ = ['print_usage', 'print_long_usage', 'print_help', 'print_license', 'print_help_info',
-           'print_version', 'print_version', 'main']
+__all__ = ['print_usage', 'print_long_usage', 'print_help', 'print_help_info', 'main']
 
 
 #/* ======================================================================= */#
@@ -200,24 +199,6 @@ turned off with '--pause 0'.
 
 
 #/* ======================================================================= */#
-#/*     Define print_license() function
-#/* ======================================================================= */#
-
-def print_license():
-
-    """
-    Print licensing information
-
-    :return: returns 1 for for exit code purposes
-    :rtype: int
-    """
-
-    print(settings.__license__)
-
-    return 1
-
-
-#/* ======================================================================= */#
 #/*     Define print_help_info() function
 #/* ======================================================================= */#
 
@@ -240,44 +221,6 @@ Help Flags:
     --version       Version and ownership information
     --usage         Arguments, parameters, etc.
     """)
-
-    return 1
-
-
-#/* ======================================================================= */#
-#/*     Define print_version() function
-#/* ======================================================================= */#
-
-def print_short_version():
-
-    """
-    Only print the module version
-
-    :return: returns 1 for for exit code purposes
-    :rtype: int
-    """
-
-    print(settings.__version__)
-
-    return 1
-
-
-#/* ======================================================================= */#
-#/*     Define print_version() function
-#/* ======================================================================= */#
-
-def print_version():
-
-    """
-    Print the module version and release date
-
-    :return: returns 1 for for exit code purposes
-    :rtype: int
-    """
-
-    print("""
-%s v%s released %s
-    """ % (UTIL_NAME, settings.__version__, settings.__release__))
 
     return 1
 
@@ -346,11 +289,11 @@ def main(args):
             elif arg in ('--help-info', '-help-info', '--helpinfo', '--helpinfo', '-h'):
                 return print_help_info()
             elif arg in ('--license', '-license'):
-                return print_license()
+                return common.print_license()
             elif arg in ('--version', '-version'):
-                return print_version()
+                return common.print_version()
             elif arg in ('--short-version', '-short-version'):
-                return print_short_version()
+                return common.print_short_version()
             elif arg in ('--usage', '-usage'):
                 return print_usage()
             elif arg in ('--long-usage', '-long-usage'):
