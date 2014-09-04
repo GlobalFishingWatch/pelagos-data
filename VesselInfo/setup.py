@@ -44,28 +44,41 @@ Setup script for FS Nav
 """
 
 
-from distutils.core import setup
 from glob import glob
+
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 
 import vessel_info
 
 
-setup(name='VesselInfo',
-      version=vessel_info.__version__,
-      author=vessel_info.__author__,
-      description=vessel_info.__doc__,
-      long_description=vessel_info.__doc__,
-      license=vessel_info.__license__,
-      packages=['vessel_info', 'vessel_info.util'],
-      scripts=[i for i in glob('bin/*.py')],
-      classifiers=['Topic :: Terminals',
-                   'Topic :: Utilities',
-                   'Intended Audience :: Developers',
-                   'License :: OSI Approved :: BSD License',
-                   'Programming Language :: Python :: 2.7',
-                   'Programming Language :: Python :: 3.0',
-                   'Programming Language :: Python :: 3.1',
-                   'Programming Language :: Python :: 3.2',
-                   'Programming Language :: Python :: 3.3',
-                   'Programming Language :: Python :: 3.4',
-                   'Programming Language :: Python :: Implementation :: PyPy'])
+setup(
+    name='VesselInfo',
+    version=vessel_info.__version__,
+    author=vessel_info.__author__,
+    description=vessel_info.__doc__,
+    long_description=vessel_info.__doc__,
+    license=vessel_info.__license__,
+    packages=[
+        'vessel_info',
+        'vessel_info.util',
+        'vessel_info.tests'
+    ],
+    scripts=glob('bin/*.py'),
+    include_package_data=True,
+    classifiers=[
+        'Topic :: Terminals',
+        'Topic :: Utilities',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: BSD License',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.0',
+        'Programming Language :: Python :: 3.1',
+        'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: Implementation :: PyPy'
+    ]
+)

@@ -213,8 +213,8 @@ Exit codes:
     1 on failure
 
 
-Examples
---------
+Sample Commands
+---------------
 
 All scrapers with default settings:
 

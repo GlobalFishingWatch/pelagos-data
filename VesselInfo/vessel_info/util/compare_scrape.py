@@ -189,8 +189,8 @@ Input file requirements:
     3. All fields must have the field being compared
 
 
-Examples
---------
+Sample Commands
+---------------
 
 Compare vessel names for all scrapers
 
