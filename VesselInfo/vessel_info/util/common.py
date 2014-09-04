@@ -36,6 +36,9 @@
 """
 
 
+import json
+
+
 #/* ======================================================================= */#
 #/*     Define string2type() function
 #/* ======================================================================= */#
@@ -60,4 +63,7 @@ def string2type(i_val):
             elif i_val.lower() == 'none':
                 return None
             else:
-                return i_val
+                try:
+                    return json.loads(i_val)
+                except ValueError:
+                    return i_val
