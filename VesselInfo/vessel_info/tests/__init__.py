@@ -37,11 +37,10 @@ Unittests and test runner
 """
 
 
+from os.path import dirname
 import sys
 import unittest
-from os import path
 
-import testdata
 import test_scrape
 
 
@@ -49,9 +48,10 @@ import test_scrape
 #/*     Define run_tests() function
 #/* ======================================================================= */#
 
-def run_tests(stream=sys.stderr, descriptions=True, verbosity=2):
+def run_tests(path=dirname(__file__), stream=sys.stderr, descriptions=True, verbosity=2):
 
-    """Function to discover and run all unit tests
+    """
+    Function to discover and run all unit tests
 
     :param stream: output stream
     :type stream: file
@@ -59,10 +59,11 @@ def run_tests(stream=sys.stderr, descriptions=True, verbosity=2):
     :type descriptions: bool
     :param verbosity: specifies how verbose test responses are
     :type verbosity: int
-    :rtype: unittest.runner.TextTestResult"""
+    :rtype: unittest.runner.TextTestResult
+    """
 
     # Discover tests
-    test_suite = unittest.TestLoader().discover(path.dirname(__file__))
+    test_suite = unittest.TestLoader().discover(path)
 
     # Run tests
     result = unittest.TextTestRunner(stream=stream, descriptions=descriptions, verbosity=verbosity).run(test_suite)

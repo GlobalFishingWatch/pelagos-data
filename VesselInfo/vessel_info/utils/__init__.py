@@ -32,7 +32,8 @@
 # =========================================================================== #
 
 
-"""Components for commandline utilities
+"""
+Components for commandline utilities
 """
 
 

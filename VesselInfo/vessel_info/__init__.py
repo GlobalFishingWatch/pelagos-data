@@ -37,7 +37,7 @@ Utilities required for collecting vessel information from a variety of websites
 """
 
 
-from vessel_info import scrape
-from vessel_info.settings import __version__, __release__, __author__, __license__
-from vessel_info import util
-
+import scrape
+from settings import __version__, __release__, __author__, __license__
+import utils
+import tests

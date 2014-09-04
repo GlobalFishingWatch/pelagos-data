@@ -34,7 +34,7 @@ Required to allow easier access to test data
 """
 
 
-from os.path import *
+from os.path import abspath, dirname
 from os import sep
 
 
@@ -42,7 +42,7 @@ from os import sep
 #/*     Provide easy access to specific test datasets
 #/* ======================================================================= */#
 
-marine_traffic_20k = abspath(dirname(__file__)) + sep + 'MarineTraffic_20k.csv'
-vessel_finder_20k = abspath(dirname(__file__)) + sep + 'VesselFinder_20k.csv'
-fleetmon_20k = abspath(dirname(__file__)) + sep + 'FleetMON_20k.csv'
-unclassified_mmsi_20k = abspath(dirname(__file__)) + sep + 'unclassified_mmsi_20k.csv'
+marine_traffic_20k = abspath(dirname(__file__)) + sep + 'data' + 'MarineTraffic_20k.csv'
+vessel_finder_20k = abspath(dirname(__file__)) + sep + 'data' + 'VesselFinder_20k.csv'
+fleetmon_20k = abspath(dirname(__file__)) + sep + 'data' + 'FleetMON_20k.csv'
+unclassified_mmsi_20k = abspath(dirname(__file__)) + sep + 'data' + 'unclassified_mmsi_20k.csv'

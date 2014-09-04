@@ -39,7 +39,7 @@ Scrape MMSI information for all rows in an input CSV
 
 import sys
 
-from vessel_info.util import mmsi2info
+from vessel_info import utils
 
 
 #/* ======================================================================= */#
@@ -49,4 +49,4 @@ from vessel_info.util import mmsi2info
 if __name__ == '__main__':
 
     # Remove script name and give the rest to main
-    sys.exit(mmsi2info.main(sys.argv[1:]))
+    sys.exit(utils.mmsi2info.main(sys.argv[1:]))

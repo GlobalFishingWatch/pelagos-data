@@ -191,7 +191,7 @@ class MMSI(object):
                     'flag': 'Sweden',
                     'system': 'AIS Marine Traffic',
                     'mmsi': '266252000',
-                    'source': 'MarineTraffic
+                    'source': 'MarineTraffic'
                 }
 
             Fields that cannot be collected are set to the user specified null value
@@ -204,7 +204,7 @@ class MMSI(object):
                 but none are suppressed
         """
 
-        name = kwargs.get('name', 'MarrineTraffic')
+        name = kwargs.get('name', 'MarineTraffic')
         base_url = kwargs.get('base_url', 'http://www.marinetraffic.com/en/ais/details/ships/')
         headers = kwargs.get('headers', {'User-agent': self.user_agent})
         timeout = kwargs.get('timeout', self.timeout)

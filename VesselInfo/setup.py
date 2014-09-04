@@ -63,7 +63,7 @@ setup(
     license=vessel_info.__license__,
     packages=[
         'vessel_info',
-        'vessel_info.util',
+        'vessel_info.utils',
         'vessel_info.tests'
     ],
     scripts=glob('bin/*.py'),

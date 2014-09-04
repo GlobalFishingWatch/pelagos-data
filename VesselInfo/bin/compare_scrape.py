@@ -39,7 +39,7 @@ Compare mmsi2info.py output
 
 import sys
 
-from vessel_info.util import compare_scrape
+from vessel_info import utils
 
 
 #/* ======================================================================= */#
@@ -49,4 +49,4 @@ from vessel_info.util import compare_scrape
 if __name__ == '__main__':
 
     # Remove script name and give the rest to main
-    sys.exit(compare_scrape.main(sys.argv[1:]))
+    sys.exit(utils.compare_scrape.main(sys.argv[1:]))
