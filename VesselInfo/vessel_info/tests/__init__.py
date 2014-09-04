@@ -38,6 +38,7 @@ Unittests and test runner
 
 
 from os.path import dirname
+
 import sys
 import unittest
 

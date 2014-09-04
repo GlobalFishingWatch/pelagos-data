@@ -38,6 +38,6 @@ Utilities required for collecting vessel information from a variety of websites
 
 
 import scrape
-from settings import __version__, __release__, __author__, __license__
+from settings import __version__, __release__, __author__, __license__, __author_email__, __source__
 import utils
 import tests

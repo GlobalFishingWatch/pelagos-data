@@ -45,6 +45,7 @@ __module_name__ = 'VesselInfo'
 __version__ = '0.1-dev'
 __release__ = '2014-09-02'
 __author__ = 'Kevin Wurster'
+__author_email__ = 'kevin@skytruth.org'
 __source__ = 'https://github.com/SkyTruth/pelagos-data/'
 __license__ = """
 The MIT License (MIT)

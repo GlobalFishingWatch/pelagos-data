@@ -58,9 +58,11 @@ setup(
     name='VesselInfo',
     version=vessel_info.__version__,
     author=vessel_info.__author__,
+    author_email=vessel_info.__author_email__,
     description=vessel_info.__doc__,
     long_description=vessel_info.__doc__,
     license=vessel_info.__license__,
+    url=vessel_info.__source__,
     packages=[
         'vessel_info',
         'vessel_info.utils',
