@@ -415,9 +415,9 @@ All scrapers but give FleetMON a timeout value and the required API user and key
             for kv in aso.split(','):
                 option, value = kv.split('=', 1)
                 value = string2type(value)
-                if value not in scrape.auto_scrape(None, _get_options=True).keys():
+                if option not in scrape.auto_scrape(None, _get_options=True).keys():
                     bail = True
-                    stream.write("ERROR: Unrecognized auto-scrape option: %s" % kv)
+                    stream.write("ERROR: Unrecognized auto-scrape option: %s\n" % kv)
                 else:
                     auto_scrape_options[option] = value
         except ValueError:
@@ -448,7 +448,7 @@ All scrapers but give FleetMON a timeout value and the required API user and key
                 value = string2type(value)
                 if option not in scrape.MMSI.scraper_options.keys():
                     bail = True
-                    stream.write("ERROR: Invalid option for scraper '%s': %s" % (s_name, kv))
+                    stream.write("ERROR: Invalid option for scraper '%s': %s\n" % (s_name, kv))
                 # Valid option - add to scraper options
                 else:
                     if s_name not in scraper_options:
