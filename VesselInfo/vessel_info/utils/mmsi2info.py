@@ -446,7 +446,7 @@ All scrapers but give FleetMON a timeout value and the required API user and key
             for kv in key_vals.split(','):
                 option, value = kv.split('=')
                 value = string2type(value)
-                if option not in scrape.MMSI.scraper_options.keys():
+                if option not in scrape.MMSI.scraper_options[s_name].keys():
                     bail = True
                     stream.write("ERROR: Invalid option for scraper '%s': %s\n" % (s_name, kv))
                 # Valid option - add to scraper options
