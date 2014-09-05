@@ -120,7 +120,7 @@ class MMSI(object):
     #/*     Define __init__() method
     #/* ----------------------------------------------------------------------- */#
 
-    def __init__(self, mmsi, user_agent=None, null=None, timeout=DEFAULT_TIMEOUT):
+    def __init__(self, mmsi, user_agent=None, null=None, timeout=DEFAULT_TIMEOUT, **kwargs):
 
         """Collect vessel information by scraping specific websites
 
@@ -146,17 +146,12 @@ class MMSI(object):
         else:
             self.user_agent = user_agent
 
+        # Scraper specific options
+        self.fleetmon_api_user = kwargs.get('fleetmon_api_user', None)
+        self.fleetmon_api_key = kwargs.get('fleetmon_api_key', None)
+
         # Output template for scrapers to dump info into
-        self.output_template = {
-            'name': self.null,
-            'class': self.null,
-            'callsign': self.null,
-            'imo': self.null,
-            'flag': self.null,
-            'system': self.null,
-            'mmsi': self.null,
-            'source': self.null
-        }
+        self.output_template = {i: self.null for i in self.ofields}
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Define marine_traffic() method
@@ -394,7 +389,7 @@ class MMSI(object):
                     # <span class="value" itemprop="type">Passenger/Ro-Ro Cargo Ship</span>
                     if line.attrs['itemprop'] == 'type':
                         try:
-                            output['class'] = line.text
+                            output['class'] = line.text.strip()
                         except IndexError:
                             output['class'] = self.null
 
@@ -402,7 +397,7 @@ class MMSI(object):
                     # <span class="value" itemprop="callsign">PJDZ</span>
                     elif line.attrs['itemprop'] == 'callsign':
                         try:
-                            output['callsign'] = line.text
+                            output['callsign'] = line.text.strip()
                         except IndexError:
                             output['callsign'] = self.null
 
@@ -410,7 +405,7 @@ class MMSI(object):
                     # <span class="value" itemprop="imoNumber">N/A</span>
                     elif line.attrs['itemprop'] == 'imoNumber':
                         try:
-                            output['imo'] = line.text
+                            output['imo'] = line.text.strip()
                         except IndexError:
                             output['imo'] = self.null
 
@@ -418,7 +413,7 @@ class MMSI(object):
                     # <span class="value" itemprop="type">Passenger/Ro-Ro Cargo Ship</span>
                     elif line.attrs['itemprop'] == 'flag':
                         try:
-                            output['flag'] = line.text
+                            output['flag'] = line.text.strip()
                         except IndexError:
                             output['flag'] = self.null
 
@@ -426,7 +421,7 @@ class MMSI(object):
                     # <span class="value" itemprop="productID MMSI">266252000</span>
                     elif line.attrs['itemprop'] == 'productID MMSI':
                         try:
-                            output['mmsi'] = line.text
+                            output['mmsi'] = line.text.strip()
                         except IndexError:
                             output['mmsi'] = self.null
 
@@ -488,7 +483,7 @@ class MMSI(object):
                     'flag': 'Sweden',
                     'system': None,
                     'mmsi': '266252000',
-                    'source': 'VesselFinder
+                    'source': 'FleetMON
                 }
 
             Fields that cannot be collected are set to the user specified null value
@@ -507,8 +502,8 @@ class MMSI(object):
         """
 
         name = kwargs.get('name', 'FleetMON')
-        api_key = kwargs.get('api_key', None)
-        api_user = kwargs.get('api_user', None)
+        api_key = kwargs.get('api_key', self.fleetmon_api_key)
+        api_user = kwargs.get('api_user', self.fleetmon_api_user)
         base_url = kwargs.get('base_url', 'https://www.fleetmon.com/api/p/personal-v1/vesselurl/')
         headers = kwargs.get('headers', {'User-agent': self.user_agent})
         get_callsign = kwargs.get('callsign', False)
@@ -541,11 +536,11 @@ class MMSI(object):
             output = self.output_template.copy()
             output['system'] = self.null  # Doesn't specify AIS vs. VMS vs. etc.
             output['source'] = name
-            output['name'] = unicode(json_response['objects'][0].get('name', self.null))
-            output['class'] = unicode(json_response['objects'][0].get('type', self.null))
-            output['imo'] = unicode(json_response['objects'][0].get('imo', self.null))
-            output['flag'] = unicode(json_response['objects'][0].get('flag', self.null))
-            output['mmsi'] = unicode(json_response['objects'][0].get('mmsi', self.null))
+            output['name'] = json_response['objects'][0].get('name', self.null)
+            output['class'] = json_response['objects'][0].get('type', self.null)
+            output['imo'] = json_response['objects'][0].get('imo', self.null)
+            output['flag'] = json_response['objects'][0].get('flag', self.null)
+            output['mmsi'] = json_response['objects'][0].get('mmsi', self.null)
             # Callsign defaults to null through the template
 
             # Attempt to get the callsign by scraping the vessel info page

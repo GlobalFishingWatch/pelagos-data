@@ -37,6 +37,9 @@ Unittests for vessel_info.scrape
 """
 
 
+from __future__ import unicode_literals
+
+import requests.exceptions
 import sys
 import unittest
 
@@ -44,15 +47,18 @@ from vessel_info import scrape
 
 
 #/* ======================================================================= */#
-#/*     Define global variables
+#/*     Define TestMMSI() class
 #/* ======================================================================= */#
 
 class TestMMSI(unittest.TestCase):
+    
+    #/* ----------------------------------------------------------------------- */#
+    #/*     Define setUp() method
+    #/* ----------------------------------------------------------------------- */#
 
-    def test_marine_traffic(self):
-
-        # Standard use case
-        expected = {
+    def setUp(self):
+        self.mmsi = '266252000'
+        self.expected_mt = {
             'name': 'NORDLINK',
             'class': 'Ro-ro/passenger ship',
             'callsign': 'SJPW',
@@ -62,9 +68,98 @@ class TestMMSI(unittest.TestCase):
             'mmsi': '266252000',
             'source': 'MarineTraffic'
         }
-        scrape_mmsi = scrape.MMSI(expected['mmsi'])
+        self.expected_vf = {
+            'callsign': 'SJPW',
+            'class': 'Passenger/Ro-Ro Cargo Ship',
+            'flag': 'Sweden',
+            'imo': '9336256',
+            'mmsi': '266252000',
+            'name': 'NORDLINK',
+            'source': 'VesselFinder',
+            'system': None
+        }
+        self.expected_fm = {
+            'callsign': None,
+            'class': 'RoRo ship',
+            'flag': 'SE|Sweden',
+            'imo': 9336256,
+            'mmsi': 266252000,
+            'name': 'NORDLINK',
+            'source': 'FleetMON',
+            'system': None
+        }
+
+    #/* ----------------------------------------------------------------------- */#
+    #/*     Define test_marine_traffic() method
+    #/* ----------------------------------------------------------------------- */#
+
+    def test_marine_traffic(self):
+
+        # Standard use case
+        scrape_mmsi = scrape.MMSI(self.expected_mt['mmsi'])
         actual = scrape_mmsi.marine_traffic()
-        self.assertDictEqual(expected, actual)
+        self.assertDictEqual(self.expected_mt, actual)
+
+        # Check scraper options
+        self.expected_mt['source'] = 'NEW_NAME'
+        actual = scrape_mmsi.marine_traffic(name='NEW_NAME')
+        self.assertDictEqual(self.expected_mt, actual)
+
+        # Test with invalid MMSI
+        scrape_mmsi = scrape.MMSI('INVALID----MMSI')
+        self.assertRaises(requests.exceptions.HTTPError, scrape_mmsi.marine_traffic)
+
+    #/* ----------------------------------------------------------------------- */#
+    #/*     Define test_vessel_finder() method
+    #/* ----------------------------------------------------------------------- */#
+
+    def test_vessel_finder(self):
+
+        # Standard use case
+        scrape_mmsi = scrape.MMSI(self.expected_vf['mmsi'])
+        actual = scrape_mmsi.vessel_finder()
+        self.assertDictEqual(self.expected_vf, actual)
+
+        # Check scraper options
+        self.expected_vf['source'] = 'NEW_NAME'
+        actual = scrape_mmsi.vessel_finder(name='NEW_NAME')
+        self.assertDictEqual(self.expected_vf, actual)
+
+        # Test with invalid MMSI
+        scrape_mmsi = scrape.MMSI('INVALID----MMSI')
+        self.assertRaises(requests.exceptions.HTTPError, scrape_mmsi.vessel_finder)
+
+    #/* ----------------------------------------------------------------------- */#
+    #/*     Define test_fleet_mon() method
+    #/* ----------------------------------------------------------------------- */#
+
+    def test_fleet_mon(self):
+
+        # Standard use case
+        scrape_mmsi = scrape.MMSI(self.expected_fm['mmsi'],
+                                  fleetmon_api_user='skytruth_api',
+                                  fleetmon_api_key='56703a82a81cf6ae67610c2e447259d75e023718')
+        actual = scrape_mmsi.fleetmon()
+        self.assertDictEqual(self.expected_fm, actual)
+
+        # Check scraper options
+        self.expected_fm['source'] = 'NEW_NAME'
+        self.expected_fm['callsign'] = 'SJPW'
+        actual = scrape_mmsi.fleetmon(callsign=True, name='NEW_NAME')
+        self.assertDictEqual(self.expected_fm, actual)
+
+        # Test with invalid MMSI
+        scrape_mmsi = scrape.MMSI('INVALID----MMSI')
+        self.assertRaises(requests.exceptions.HTTPError, scrape_mmsi.vessel_finder)
+
+
+#/* ======================================================================= */#
+#/*     Define TestAutoScrape() class
+#/* ======================================================================= */#
+
+class TestAutoScrape(unittest.TestCase):
+    # TODO: Figure out how to test
+    pass
 
 
 #/* ======================================================================= */#
