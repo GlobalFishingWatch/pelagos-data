@@ -33,13 +33,7 @@
 
 
 """
-Given a CSV with a field containing an MMSI, give the same CSV back with additional
-vessel attributes:
-    name
-    class
-    callsign
-    imo
-    flag
+Commandline utility to add vessel information to an input CSV containing MMSI numbers
 """
 
 

@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-
 # This document is part of pelagos-data
 # https://github.com/skytruth/pelagos-data
 
@@ -42,9 +39,7 @@ import sys
 import unittest
 
 import testdata
-import test_common
-import test_compare_scrape
-import test_mmsi2info
+import test_utils
 import test_scrape
 
 

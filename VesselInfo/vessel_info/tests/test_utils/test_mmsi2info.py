@@ -1,5 +1,8 @@
-# This document is part of the pelagos project
-# https://github.com/skytruth/pelagos
+#!/usr/bin/env python
+
+
+# This document is part of pelagos-data
+# https://github.com/skytruth/pelagos-data
 
 
 # =========================================================================== #
@@ -30,27 +33,29 @@
 
 
 """
-Sample and test datasets
+Unittests for vessel_info.utils.mmsi2info
 """
 
 
-from os.path import abspath, dirname
-from os import sep
+from __future__ import unicode_literals
+
+import sys
+import unittest
+
+from vessel_info import utils
 
 
 #/* ======================================================================= */#
-#/*     Provide easy access to specific test datasets
+#/*     Define TestMain() class
 #/* ======================================================================= */#
 
-_data_dir = abspath(dirname(__file__))
+class TestMain(unittest.TestCase):
+    pass
 
-sample_mmsi = _data_dir + sep + '10_mmsi.csv'
-unclassified_mmsi_20k = _data_dir + sep + 'data' + 'unclassified_mmsi_20k.csv'
 
-marine_traffic_20k = _data_dir + sep + 'data' + 'MarineTraffic_20k.csv'
-vessel_finder_20k = _data_dir + sep + 'data' + 'VesselFinder_20k.csv'
-fleetmon_20k = _data_dir + sep + 'data' + 'FleetMON_20k.csv'
+#/* ======================================================================= */#
+#/*     Command Line Execution
+#/* ======================================================================= */#
 
-test_common_TestMain_test_standard_input1 = _data_dir + sep + 'test_common_TestMain_test_standard_input2.csv'
-test_common_TestMain_test_standard_input2 = _data_dir + sep + 'test_common_TestMain_test_standard_input1.csv'
-test_common_TestMain_test_standard_expected_output = _data_dir + sep + 'test_common_TestMain_test_standard_expected_output.csv'
+if __name__ == '__main__':
+    sys.exit(unittest.main())

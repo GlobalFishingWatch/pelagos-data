@@ -33,7 +33,7 @@
 
 
 """
-Compare mmsi2info.py output to determine which websites produce differing results
+Compare mmsi2info.py output to determine which sources produce differing results
 """
 
 

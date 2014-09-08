@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-
 # This document is part of pelagos-data
 # https://github.com/skytruth/pelagos-data
 
@@ -33,7 +30,7 @@
 
 
 """
-Utilities required for collecting vessel information from a variety of websites
+Utilities required for collecting vessel information from a variety of sources
 """
 
 

@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-
 # This document is part of pelagos-data
 # https://github.com/skytruth/pelagos-data
 
