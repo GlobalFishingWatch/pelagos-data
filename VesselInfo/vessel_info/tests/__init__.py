@@ -38,10 +38,13 @@ Unittests and test runner
 
 
 from os.path import dirname
-
 import sys
 import unittest
 
+import testdata
+import test_common
+import test_compare_scrape
+import test_mmsi2info
 import test_scrape
 
 
