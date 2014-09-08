@@ -32,7 +32,8 @@
 # =========================================================================== #
 
 
-"""Common components for all commandline utilities
+"""
+Common components for all commandline utilities
 """
 
 
