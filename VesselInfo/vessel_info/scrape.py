@@ -483,7 +483,7 @@ class MMSI(object):
                     'flag': 'Sweden',
                     'system': None,
                     'mmsi': '266252000',
-                    'source': 'FleetMON
+                    'source': 'FleetMON'
                 }
 
             Fields that cannot be collected are set to the user specified null value
@@ -582,6 +582,14 @@ class MMSI(object):
                                     except UnicodeEncodeError:
                                         value = self.null
                                     output['callsign'] = value
+
+        # FleetMON's API returns IMO and MMSI values stored as int's but all other scrapers return str/unicode
+        # Normalize to string type
+        for k, v in output.copy().iteritems():
+            if v != self.null:
+                output[k] = unicode(v)
+            else:
+                output[k] = v
 
         soup = None
         return output
@@ -706,9 +714,11 @@ def auto_scrape(mmsi_scraper, _get_options=False, **kwargs):
                 else:
                     time.sleep(pause)
 
-                # Successful scrape - no need to continue trying
+                # Attempt a scrape
                 try:
                     result = getattr(mmsi_scraper, name)(**scraper_options)
+
+                    # Successful scrape - no need to continue trying
                     if result is not None:
                         break
 
@@ -716,12 +726,9 @@ def auto_scrape(mmsi_scraper, _get_options=False, **kwargs):
                 except Exception, e:
 
                     # Alert of total failure
+                    status_string = "MMSI: %s  %s  attempt %s/%s: %s\n"
                     if attempt_num is retry:
-                        status_string = "MMSI: %s  %s  attempt %s/%s: %s - FAILED\n"
-
-                    # Alert of failed attempt
-                    else:
-                        status_string = "MMSI: %s  %s  attempt %s/%s: %s\n"
+                        status_string += "FAILED\n"
 
                     if verbose:
                         stream.write(stream_prefix + status_string % (mmsi_scraper.mmsi, name,

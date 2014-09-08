@@ -47,6 +47,14 @@ from vessel_info import scrape
 
 
 #/* ======================================================================= */#
+#/*     Define global variables
+#/* ======================================================================= */#
+
+FLEETMON_API_USER = 'skytruth_kevin'
+FLEETMON_API_KEY = 'a0e7b74fc6bbd9c44c8359e20b01f903b3d6deaa'
+
+
+#/* ======================================================================= */#
 #/*     Define TestMMSI() class
 #/* ======================================================================= */#
 
@@ -57,6 +65,8 @@ class TestMMSI(unittest.TestCase):
     #/* ----------------------------------------------------------------------- */#
 
     def setUp(self):
+
+        # ** All string values are unicode **
         self.mmsi = '266252000'
         self.expected_mt = {
             'name': 'NORDLINK',
@@ -82,8 +92,8 @@ class TestMMSI(unittest.TestCase):
             'callsign': None,
             'class': 'RoRo ship',
             'flag': 'SE|Sweden',
-            'imo': 9336256,
-            'mmsi': 266252000,
+            'imo': '9336256',
+            'mmsi': '266252000',
             'name': 'NORDLINK',
             'source': 'FleetMON',
             'system': None
@@ -135,10 +145,11 @@ class TestMMSI(unittest.TestCase):
 
     def test_fleet_mon(self):
 
+        global FLEETMON_API_USER
+        global FLEETMON_API_KEY
+
         # Standard use case
-        scrape_mmsi = scrape.MMSI(self.expected_fm['mmsi'],
-                                  fleetmon_api_user='skytruth_api',
-                                  fleetmon_api_key='56703a82a81cf6ae67610c2e447259d75e023718')
+        scrape_mmsi = scrape.MMSI(self.expected_fm['mmsi'], fleetmon_api_user=FLEETMON_API_USER, fleetmon_api_key=FLEETMON_API_KEY)
         actual = scrape_mmsi.fleetmon()
         self.assertDictEqual(self.expected_fm, actual)
 
@@ -158,8 +169,56 @@ class TestMMSI(unittest.TestCase):
 #/* ======================================================================= */#
 
 class TestAutoScrape(unittest.TestCase):
-    # TODO: Figure out how to test
-    pass
+
+    def test_fallback(self):
+
+        global FLEETMON_API_KEY
+        global FLEETMON_API_USER
+
+        # Test an MMSI that failed for MarineTraffic but passed for VesselFinder
+        scrape_mmsi = scrape.MMSI('207029000')
+        actual = scrape.auto_scrape(scrape_mmsi, verbose=False, pause=1)
+        expected = {
+            'callsign': 'LZHL',
+            'class': 'Bulk Carrier',
+            'flag': 'Bulgaria',
+            'imo': '8128145',
+            'mmsi': '207029000',
+            'name': 'SVILEN RUSSEV',
+            'source': 'VesselFinder',
+            'system': None
+        }
+        self.assertDictEqual(actual, expected)
+
+        # Test an MMSI that failed for VesselFinder but passed for FleetMON
+        scraper_options = {
+            'fleetmon': {
+                'api_user': FLEETMON_API_USER,
+                'api_key': FLEETMON_API_KEY,
+                'callsign': True
+            }
+        }
+        scrape_mmsi = scrape.MMSI('570920')
+        actual = scrape.auto_scrape(scrape_mmsi, verbose=False, pause=1, scraper_options=scraper_options)
+        expected = {
+            'callsign': 'WCB7066',
+            'class': 'Tug',
+            'flag': 'None|None',
+            'imo': '8978693',
+            'mmsi': '570920',
+            'name': 'NRC SENTRY',
+            'source': 'FleetMON',
+            'system': None
+        }
+        self.assertDictEqual(expected, actual)
+
+        # Make sure None is returned when a scraper fails
+        # This MMSI is found by VesselFinder but not MarineTraffic so if MarineTraffic is the only enable scraper,
+        # a value of None should be returned
+        scrape_mmsi = scrape.MMSI('207029000')
+        actual = scrape.auto_scrape(scrape_mmsi, verbose=False, pause=1, keep_scraper='marine_traffic')
+        expected = None
+        self.assertEqual(actual, expected)
 
 
 #/* ======================================================================= */#
@@ -167,4 +226,4 @@ class TestAutoScrape(unittest.TestCase):
 #/* ======================================================================= */#
 
 if __name__ == '__main__':
-    sys.exit(unittest.main(sys.argv))
+    sys.exit(unittest.main())
