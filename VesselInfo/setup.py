@@ -66,7 +66,8 @@ setup(
     packages=[
         'vessel_info',
         'vessel_info.utils',
-        'vessel_info.tests'
+        'vessel_info.tests',
+        'vessel_info.tests.testdata'
     ],
     scripts=glob('bin/*.py'),
     include_package_data=True,
