@@ -39,7 +39,6 @@ import sys
 import unittest
 
 import testdata
-import test_utils
 import test_scrape
 
 

@@ -35,14 +35,24 @@ Common components for all commandline utilities
 
 
 import json
+from os import linesep
 from .. import settings
+import sys
+
+
+#/* ======================================================================= */#
+#/*     Global variables
+#/* ======================================================================= */#
+
+VERBOSE_MODE = True
+DEFAULT_STREAM = sys.stdout
 
 
 #/* ======================================================================= */#
 #/*     Document level attributes
 #/* ======================================================================= */#
 
-__all__ = ['print_version', 'print_short_version', 'print_license', 'print_help_info', 'string2type']
+__all__ = ['print_version', 'print_short_version', 'print_license', 'print_help_info', 'vprint', 'string2type']
 
 
 #/* ======================================================================= */#
@@ -156,3 +166,51 @@ def string2type(i_val):
                     return json.loads(i_val)
                 except ValueError:
                     return i_val
+
+
+#/* ======================================================================= */#
+#/*     Define vprint() function
+#/* ======================================================================= */#
+
+def vprint(message, stream=DEFAULT_STREAM, flush=False):
+
+    """
+    Easily handle verbose printing.  Newline characters are automatically
+    appended if they are not already present.
+
+
+    Arguments:
+
+        message (str|unicode|list|tuple):   A single or multi-line message to be
+                                            written to the specified stream. If
+                                            the input datatype is a list or tuple,
+                                            each element is assumed to be a line
+                                            of the message and are written
+                                            separately.
+        stream (file):  An open file or other object with a callable "write()"
+                        [default: sys.stdout]
+    """
+
+    global VERBOSE_MODE
+    global DEFAULT_STREAM
+
+    if VERBOSE_MODE:
+
+        # Message is multiple lines
+        if isinstance(message, (list, tuple)):
+            for line in message:
+
+                # Figure out if a newline character is needed, modify, then write
+                if line[-1] != linesep:
+                    line += linesep
+                stream.write(line)
+
+        # Message is a single line
+        else:
+            # Figure out if a newline character is needed, modify, then write
+            if message[-1] != linesep:
+                message += linesep
+            stream.write(message)
+
+    if flush:
+        stream.flush()

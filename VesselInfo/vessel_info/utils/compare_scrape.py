@@ -43,10 +43,10 @@ from __future__ import unicode_literals
 import csv
 import inspect
 import os
-from os import linesep
 from os.path import *
 import sys
 
+import common
 from common import *
 
 
@@ -63,7 +63,6 @@ __all__ = ['print_help', 'print_usage', 'print_long_usage', 'file2dict', 'main']
 #/* ======================================================================= */#
 
 UTIL_NAME = __docname__
-VERBOSE_MODE = True
 
 
 #/* ======================================================================= */#
@@ -75,13 +74,15 @@ def print_usage():
     """
     Print commandline usage information
 
-    :return: returns 1 for for exit code purposes
-    :rtype: int
+
+    Returns:
+
+        1 for exit code purposes
     """
 
     vprint("""
-{0} [--usage] [-mf mmsi_field] [-cf compare_field]  [-omf o_mmsi_field]
-{1} [--overwrite] input_csv1 input_csv2 [input_csv...] output_file
+{0} [-help-info] [-q] [-mf mmsi_field] [-cf compare_field] [-omf o_mmsi_field]
+{1} [-overwrite] input_csv1 input_csv2 [input_csv3 ...] output_file
     """.format(UTIL_NAME, ' ' * len(UTIL_NAME)))
 
     return 1
@@ -96,19 +97,27 @@ def print_long_usage():
     """
     Print full commandline usage information
 
-    :return: returns 1 for for exit code purposes
-    :rtype: int
+
+    Returns:
+
+        1 for exit code purposes
     """
 
     print_usage()
     vprint("""Options:
+
+    -q -quiet           Suppress all progress and status reports
+
     -mf -mmsi-field     Field in all input files containing MMSI numbers
                         [default: mmsi]
+
     -cf -compare-field  Field in all input files that will be compared
                         [default: v_imo]
+
     -omf -ommsi-field   Name of MMSI field in output file
                         [default: mmsi]
-    --overwrite         Blindly overwrite output file if it exists
+
+    -overwrite         Blindly overwrite output file if it exists
     """)
 
     return 1
@@ -123,14 +132,15 @@ def print_help():
     """
     Print commandline usage information
 
-    :return: returns 1 for for exit code purposes
-    :rtype: int
+    Returns:
+
+        1 for exit code purposes
     """
 
-    vprint("""
+    print("""
 Help: {0}
 ------{1}""".format(UTIL_NAME, '-' * len(UTIL_NAME)))
-    vprint(main.__doc__)
+    print(main.__doc__)
 
     return 1
 
@@ -142,7 +152,60 @@ Help: {0}
 def file2dict(primary_field, ifile):
 
     """
+    Convert a CSV to a dictionary with a user defined row as the key.  This allows
+    for a kind of poor man's indexing to make access to specific CSV rows faster
+    and easier.
 
+
+
+
+    Arguments:
+
+        primary_field (str):    The field in the CSV to used in the output dictionary
+                                as that row's key.  Treated as a primary key so the
+                                values contained within that column of the CSV must
+                                be unique.
+        ifile (str):            Path to CSV to be processed
+
+
+    Returns:
+
+        A dictionary with the following structure:
+            {
+                primary_field: {
+                    'field1': 'value',
+                    'field2': 'another value'
+                }
+            }
+
+
+    Raises:
+
+        ValueError: primary_field is not present in the input CSV or contains
+                    it contains non-unique values
+
+
+    Sample Input:
+
+        mmsi,v_name,v_class,v_callsign,v_imo,v_flag,v_system,v_mmsi,v_source
+        "273357230","SINEKURA","Aggregates Carrier","UBKH3","9066875","Russia","","273357230","VesselFinder"
+
+
+    Sample Output:
+
+        {
+            '273357230': {
+                'mmsi': 273357230,
+                'v_name': 'SINEKURA',
+                'v_class': 'Aggregates Carrier',
+                'v_callsign': 'UBKH3',
+                'v_imo': '9066875',
+                'v_flag': 'Russia',
+                'v_system': None,
+                'v_mmsi': '273357230',
+                'v_source': VesselFinder
+            }
+        }
     """
 
     output = {}
@@ -153,43 +216,12 @@ def file2dict(primary_field, ifile):
                              % (primary_field, ', '.join(reader.fieldnames)))
         for row in reader:
             primary_val = row[primary_field]
+            if primary_val in output:
+                raise ValueError("primary_field '%s' is non unique - multiple occurrences of: %s"
+                                 % (primary_field, primary_val))
             output[primary_val] = row.copy()
 
     return output.copy()
-
-
-#/* ======================================================================= */#
-#/*     Define vprint() function
-#/* ======================================================================= */#
-
-def vprint(message, stream=sys.stdout):
-    
-    """
-    Easily handle verbose printing
-    
-    :param message: single or multi-line message to be printed
-    :type message: str|unicode|list|tuple
-    """
-    
-    global VERBOSE_MODE
-    
-    if VERBOSE_MODE:
-        
-        # Message is multiple lines
-        if isinstance(message, (list, tuple)):
-            for line in message:
-                
-                # Figure out if a newline character is needed, modify, then write
-                if line[-1] != linesep:
-                    line += linesep
-                stream.write(line)
-        
-        # Message is a single line
-        else:
-            # Figure out if a newline character is needed, modify, then write
-            if message[-1] != linesep:
-                message += linesep
-            stream.write(message)
             
 
 #/* ======================================================================= */#
@@ -264,8 +296,6 @@ Compare vessel names for all scrapers but use non-default MMSI fields
     #/* ----------------------------------------------------------------------- */#
     #/*     Defaults
     #/* ----------------------------------------------------------------------- */#
-    
-    global VERBOSE_MODE
 
     mmsi_field = 'mmsi'
     compare_field = 'v_imo'
@@ -310,7 +340,7 @@ Compare vessel names for all scrapers but use non-default MMSI fields
             # User feedback
             elif arg in ('-q', '-quiet'):
                 i += 1
-                VERBOSE_MODE = False
+                common.VERBOSE_MODE = False
 
             # Configure input file
             elif arg in ('-mf', '-mmsi-field'):
@@ -339,7 +369,7 @@ Compare vessel names for all scrapers but use non-default MMSI fields
 
         except (IndexError, ValueError):
             arg_error = True
-            vprint("ERROR: An argument has invalid parameters - current arg: %s" % arg)
+            print("ERROR: An argument has invalid parameters - current arg: %s" % arg)
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Validate configuration / transform arguments
@@ -456,9 +486,7 @@ Compare vessel names for all scrapers but use non-default MMSI fields
 
             # Update user
             prog_i += 1
-            if VERBOSE_MODE:
-                sys.stdout.write("\r\x1b[K" + "    %s/%s" % (str(prog_i), str(prog_max)))
-                sys.stdout.flush()
+            vprint("\r\x1b[K" + "    %s/%s" % (str(prog_i), str(prog_max)), flush=True)
             compare_list = []
             for ifile in input_csv_files:
                 try:

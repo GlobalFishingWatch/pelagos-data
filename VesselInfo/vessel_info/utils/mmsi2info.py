@@ -60,6 +60,7 @@ __all__ = ['print_usage', 'print_long_usage', 'print_help', 'main']
 #/* ======================================================================= */#
 
 UTIL_NAME = __docname__
+VERBOSE_MODE = True
 
 
 #/* ======================================================================= */#
@@ -71,14 +72,16 @@ def print_usage():
     """
     Print commandline usage information
 
-    :return: returns 1 for for exit code purposes
-    :rtype: int
+
+    Returns:
+
+        1 for exit code purposes
     """
 
     print("""
-{0} [--help-info] [-ss N] [-op ofield_prefix] [-im field_name]
+{0} [-help-info] [-ss N] [-op ofield_prefix] [-im field_name]
 {1} [-ao option=value,o=v,...] [-so name:option=value,o=v,...]
-{1} [--overwrite] input_csv output_csv
+{1} [-overwrite] input_csv output_csv
     """.format(UTIL_NAME, ' ' * len(UTIL_NAME)))
 
     return 1
@@ -93,24 +96,32 @@ def print_long_usage():
     """
     Print all commandline usage information
 
-    :return: returns 1 for for exit code purposes
-    :rtype: int
+
+    Returns:
+
+        1 for exit code purposes
     """
 
     print_usage()
-    print("""Options:
+    print("""
+    Options:
     -ao -auto-option    Options to be passed to the engine that drives the
                         scraping process
+
     -so -scraper-option Options to be passed to specific scrapers
+
     -mf -mmsi-field     Specify which field in the input_csv contains the
                         MMSI values
                         [default: mmsi]
+
     -op -output-prefix  Vessel information collected by the scrapers is appended
                         to the input_csv so in order to prevent any fields from
                         being overwritten a prefix for the new output fields can
                         be specified
                         [default: v_]
+
     -ss -subsample      Only process N rows of the input file
+
     --overwrite         Blindly overwrite the output file if it exists
     """.format(UTIL_NAME, ' ' * len(UTIL_NAME)))
 
@@ -159,8 +170,10 @@ def print_help():
     """
     Print more detailed help information
 
-    :return: returns 1 for for exit code purposes
-    :rtype: int
+
+    Returns:
+
+        1 for exit code purposes
     """
 
     print("""
@@ -233,12 +246,13 @@ All scrapers but specify a different number of retries, scraper order, and pause
         -op vessel_ \\
         -ao retry=10 \\
         -ao scraper_order=fleetmon,marine_traffic,vessel_finder \\
-        -ao pause=1
+        -ao pause=1 \\
         Input_MMSI.csv \\
         Output.csv
 
 
 Same as above but only use FleetMON:
+
     $ mmsi2info.py \\
         -mf Vessel_MMSI \\
         -op vessel_ \\
@@ -248,11 +262,18 @@ Same as above but only use FleetMON:
 
 
 All scrapers but give FleetMON a timeout value and the required API user and key:
+
     $ mmsi2info.py \\
         -so fleetmon:api_user=fm_user,api_key=fm_key,timeout=100 \\
         Input_MMSI.csv \\
         Output.csv
     """
+
+    global VERBOSE_MODE
+
+    #/* ----------------------------------------------------------------------- */#
+    #/*     Print usage
+    #/* ----------------------------------------------------------------------- */#
 
     # Check arguments
     if len(args) is 0:
@@ -311,6 +332,11 @@ All scrapers but give FleetMON a timeout value and the required API user and key
                 return print_usage()
             elif arg in ('--long-usage', '-long-usage'):
                 return print_long_usage()
+
+            # User feedback
+            elif arg in ('-q', '-quiet'):
+                i += 1
+                VERBOSE_MODE = False
 
             # Scraper options
             elif arg in ('-ao', '-auto-option'):
@@ -507,7 +533,7 @@ All scrapers but give FleetMON a timeout value and the required API user and key
             prog_i = 0
             for row in reader:
 
-                # TODO: User feedback
+                # TODO: Figure out user feedback - should errors pass silently?
                 if print_progress:
                     prog_i += 1
                     stream.write("\r\x1b[K" + "    %s/%s - MMSI: %s" % (str(prog_i), str(num_rows), row[input_csv_mmsi_field]))
