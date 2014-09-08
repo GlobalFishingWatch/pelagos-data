@@ -194,23 +194,32 @@ def vprint(message, stream=DEFAULT_STREAM, flush=False):
     global VERBOSE_MODE
     global DEFAULT_STREAM
 
+    o_message = ''
+
+    if isinstance(stream, (str, unicode)) and stream.lower() == 'default':
+        stream = DEFAULT_STREAM
+
     if VERBOSE_MODE:
 
-        # Message is multiple lines
+        # Compile message into a single block of text
         if isinstance(message, (list, tuple)):
             for line in message:
 
                 # Figure out if a newline character is needed, modify, then write
                 if line[-1] != linesep:
                     line += linesep
-                stream.write(line)
-
-        # Message is a single line
+                o_message += line
         else:
             # Figure out if a newline character is needed, modify, then write
-            if message[-1] != linesep:
+            if message[-1] != linesep and not flush:
                 message += linesep
-            stream.write(message)
+            o_message += message
+
+    # The user wants to write to the same line, remove the last linesep
+    if flush and o_message[-1] == '\n':
+        o_message = o_message[:-1]
+
+    stream.write(o_message)
 
     if flush:
         stream.flush()

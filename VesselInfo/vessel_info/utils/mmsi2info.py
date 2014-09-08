@@ -376,13 +376,13 @@ All scrapers but give FleetMON a timeout value and the required API user and key
                 # Catch unrecognized arguments
                 else:
                     arg_error = True
-                    stream.write("ERROR: Unrecognized argument: %s\n" % arg)
+                    vprint("ERROR: Unrecognized argument: %s" % arg)
 
         # An argument with parameters likely didn't iterate 'i' properly
         except (IndexError, ValueError):
             i += 1
             arg_error = True
-            print("ERROR: An argument has invalid parameters - current arg: %s\n" % arg)
+            vprint("ERROR: An argument has invalid parameters - current arg: %s" % arg)
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Validate configuration / transform arguments
@@ -393,26 +393,26 @@ All scrapers but give FleetMON a timeout value and the required API user and key
     # Check arguments
     if arg_error:
         bail = True
-        stream.write("ERROR: Did not successfully parse arguments\n")
+        vprint("ERROR: Did not successfully parse arguments")
 
     # Check input CSV
     if input_csv_file is None:
         bail = True
-        stream.write("ERROR: Need an input CSV\n")
+        vprint("ERROR: Need an input CSV")
     elif not os.access(input_csv_file, os.R_OK):
         bail = True
-        stream.write("ERROR: Can't access input CSV: %s\n" % input_csv_file)
+        vprint("ERROR: Can't access input CSV: %s" % input_csv_file)
 
     # Check output CSV
     if output_csv_file is None:
         bail = True
-        stream.write("ERROR: Need an output CSV\n")
+        vprint("ERROR: Need an output CSV")
     elif not overwrite_mode and isfile(output_csv_file):
         bail = True
-        stream.write("ERROR: Overwrite=%s and output file exists: %s\n" % (overwrite_mode, output_csv_file))
+        vprint("ERROR: Overwrite=%s and output file exists: %s" % (overwrite_mode, output_csv_file))
     elif overwrite_mode and isfile(output_csv_file) and not os.access(output_csv_file, os.W_OK):
         bail = True
-        stream.write("ERROR: Overwrite=%s but can't access output file: %s\n" % output_csv_file)
+        vprint("ERROR: Overwrite=%s but can't access output file: %s" % output_csv_file)
     elif not isfile(output_csv_file):
         dname = dirname(output_csv_file)
         if dname == '':
@@ -437,13 +437,13 @@ All scrapers but give FleetMON a timeout value and the required API user and key
                 value = string2type(value)
                 if option not in scrape.auto_scrape(None, _get_options=True).keys():
                     bail = True
-                    stream.write("ERROR: Unrecognized auto-scrape option: %s\n" % kv)
+                    vprint("ERROR: Unrecognized auto-scrape option: %s" % kv)
                 else:
                     auto_scrape_options[option] = value
         except ValueError:
             bail = True
-            stream.write("ERROR: Auto-scrape option does not meet specification: %s\n" % aso)
-            stream.write("       option1=val1,option2=val2\n")
+            vprint("ERROR: Auto-scrape option does not meet specification: %s" % aso)
+            vprint("       option1=val1,option2=val2")
     
     # Check individual scraper options.  Input is a list of strings meeting one of the following specifications:
     # scraper_name:option1=val1
@@ -468,7 +468,7 @@ All scrapers but give FleetMON a timeout value and the required API user and key
                 value = string2type(value)
                 if option not in scrape.MMSI.scraper_options[s_name].keys():
                     bail = True
-                    stream.write("ERROR: Invalid option for scraper '%s': %s\n" % (s_name, kv))
+                    vprint("ERROR: Invalid option for scraper '%s': %s" % (s_name, kv))
                 # Valid option - add to scraper options
                 else:
                     if s_name not in scraper_options:
@@ -479,13 +479,13 @@ All scrapers but give FleetMON a timeout value and the required API user and key
                         scraper_options[s_name] = s_options
         except ValueError:
             bail = True
-            stream.write("ERROR: Scraper option does not meet specification: %s\n" % so)
-            stream.write("       scraper_name:option1=val1,option2=val2\n")
+            vprint("ERROR: Scraper option does not meet specification: %s" % so)
+            vprint("       scraper_name:option1=val1,option2=val2")
 
     # Check subsample
     if process_subsample is not None and not isinstance(process_subsample, int) or process_subsample is not None and process_subsample < 1:
         bail = True
-        stream.write("ERROR: Invalid subsample - must be an int >= 1: %s\n" % process_subsample)
+        vprint("ERROR: Invalid subsample - must be an int >= 1: %s" % process_subsample)
         
     # Exit if an error was encountered
     if bail:
@@ -501,19 +501,19 @@ All scrapers but give FleetMON a timeout value and the required API user and key
 
         # Make sure the MMSI field is in the input file
         if input_csv_mmsi_field not in reader.fieldnames:
-            stream.write("ERROR: MMSI field not found in input CSV field names: %s\n")
-            stream.write("       Fields: %s\n" % ', '.join(reader.fieldnames))
+            vprint("ERROR: MMSI field not found in input CSV field names: %s")
+            vprint("       Fields: %s" % ', '.join(reader.fieldnames))
             return 1
 
         # Figure out how many rows are in the input file
-        for row in csv.DictReader(i_f):
+        for row in reader:
             num_rows += 1
 
     # Prep I/O
-    stream.write("Preparing input CSV: %s\n" % input_csv_file)
+    vprint("Preparing input CSV: %s" % input_csv_file)
     with open(input_csv_file, 'r') as i_f:
         reader = csv.DictReader(i_f)
-        stream.write("Preparing output CSV: %s\n" % input_csv_file)
+        vprint("Preparing output CSV: %s" % input_csv_file)
         with open(output_csv_file, 'w') as o_f:
             ofields = [output_field_prefix + i for i in scrape.MMSI.ofields]
             writer = csv.DictWriter(o_f, fieldnames=reader.fieldnames + ofields)
@@ -534,10 +534,9 @@ All scrapers but give FleetMON a timeout value and the required API user and key
             for row in reader:
 
                 # TODO: Figure out user feedback - should errors pass silently?
-                if print_progress:
-                    prog_i += 1
-                    stream.write("\r\x1b[K" + "    %s/%s - MMSI: %s" % (str(prog_i), str(num_rows), row[input_csv_mmsi_field]))
-                    stream.flush()
+                prog_i += 1
+                vprint("\r\x1b[K" + "    %s/%s - MMSI: %s" % (prog_i, num_rows, row[input_csv_mmsi_field]), flush=True)
+                sys.stdout.flush()
 
                 result = scrape.auto_scrape(scrape.MMSI(row[input_csv_mmsi_field]), **auto_scrape_options)
                 if result is not None:
@@ -557,7 +556,7 @@ All scrapers but give FleetMON a timeout value and the required API user and key
     #/* ----------------------------------------------------------------------- */#
 
     # Success
-    stream.write(" - Done\n")
+    vprint(" - Done")
     return 0
 
 
