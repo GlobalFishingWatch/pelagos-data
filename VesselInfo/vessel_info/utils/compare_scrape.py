@@ -37,9 +37,13 @@ Compare mmsi2info.py output to determine which websites produce differing result
 """
 
 
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import csv
 import inspect
 import os
+from os import linesep
 from os.path import *
 import sys
 
@@ -59,6 +63,7 @@ __all__ = ['print_help', 'print_usage', 'print_long_usage', 'file2dict', 'main']
 #/* ======================================================================= */#
 
 UTIL_NAME = __docname__
+VERBOSE_MODE = True
 
 
 #/* ======================================================================= */#
@@ -74,7 +79,7 @@ def print_usage():
     :rtype: int
     """
 
-    print("""
+    vprint("""
 {0} [--usage] [-mf mmsi_field] [-cf compare_field]  [-omf o_mmsi_field]
 {1} [--overwrite] input_csv1 input_csv2 [input_csv...] output_file
     """.format(UTIL_NAME, ' ' * len(UTIL_NAME)))
@@ -96,7 +101,7 @@ def print_long_usage():
     """
 
     print_usage()
-    print("""Options:
+    vprint("""Options:
     -mf -mmsi-field     Field in all input files containing MMSI numbers
                         [default: mmsi]
     -cf -compare-field  Field in all input files that will be compared
@@ -122,10 +127,10 @@ def print_help():
     :rtype: int
     """
 
-    print("""
+    vprint("""
 Help: {0}
 ------{1}""".format(UTIL_NAME, '-' * len(UTIL_NAME)))
-    print(main.__doc__)
+    vprint(main.__doc__)
 
     return 1
 
@@ -152,6 +157,40 @@ def file2dict(primary_field, ifile):
 
     return output.copy()
 
+
+#/* ======================================================================= */#
+#/*     Define vprint() function
+#/* ======================================================================= */#
+
+def vprint(message, stream=sys.stdout):
+    
+    """
+    Easily handle verbose printing
+    
+    :param message: single or multi-line message to be printed
+    :type message: str|unicode|list|tuple
+    """
+    
+    global VERBOSE_MODE
+    
+    if VERBOSE_MODE:
+        
+        # Message is multiple lines
+        if isinstance(message, (list, tuple)):
+            for line in message:
+                
+                # Figure out if a newline character is needed, modify, then write
+                if line[-1] != linesep:
+                    line += linesep
+                stream.write(line)
+        
+        # Message is a single line
+        else:
+            # Figure out if a newline character is needed, modify, then write
+            if message[-1] != linesep:
+                message += linesep
+            stream.write(message)
+            
 
 #/* ======================================================================= */#
 #/*     Define main() function
@@ -214,14 +253,19 @@ Compare vessel names for all scrapers but use non-default MMSI fields
         Conflicts.csv
     """
 
+    #/* ----------------------------------------------------------------------- */#
+    #/*     Print usage
+    #/* ----------------------------------------------------------------------- */#
+
     # Print usage
     if len(args) is 0:
         return print_usage()
 
-
     #/* ----------------------------------------------------------------------- */#
     #/*     Defaults
     #/* ----------------------------------------------------------------------- */#
+    
+    global VERBOSE_MODE
 
     mmsi_field = 'mmsi'
     compare_field = 'v_imo'
@@ -262,6 +306,11 @@ Compare vessel names for all scrapers but use non-default MMSI fields
                 return print_usage()
             elif arg in ('--long-usage', '-long-usage'):
                 return print_long_usage()
+            
+            # User feedback
+            elif arg in ('-q', '-quiet'):
+                i += 1
+                VERBOSE_MODE = False
 
             # Configure input file
             elif arg in ('-mf', '-mmsi-field'):
@@ -290,7 +339,7 @@ Compare vessel names for all scrapers but use non-default MMSI fields
 
         except (IndexError, ValueError):
             arg_error = True
-            print("ERROR: An argument has invalid parameters - current arg: %s\n" % arg)
+            vprint("ERROR: An argument has invalid parameters - current arg: %s" % arg)
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Validate configuration / transform arguments
@@ -307,33 +356,33 @@ Compare vessel names for all scrapers but use non-default MMSI fields
     # Check arguments
     if arg_error:
         bail = True
-        print("ERROR: Did not successfully parse arguments")
+        vprint("ERROR: Did not successfully parse arguments")
 
     # Check input files
     if len(input_csv_files) < 2:
         bail = True
-        print("ERROR: Need at least 2 input files - received %s" % len(input_csv_files))
+        vprint("ERROR: Need at least 2 input files - received %s" % len(input_csv_files))
     for ifile in input_csv_files:
         if not os.access(ifile, os.R_OK):
             bail = True
-            print("ERROR: Can't access input file: %s" % ifile)
+            vprint("ERROR: Can't access input file: %s" % ifile)
         else:
             with open(ifile, 'r') as f:
                 reader = csv.DictReader(f)
                 if mmsi_field not in reader.fieldnames:
                     bail = True
-                    print("ERROR: Input file missing MMSI field '%s': %s" % (mmsi_field, ifile))
+                    vprint("ERROR: Input file missing MMSI field '%s': %s" % (mmsi_field, ifile))
                 if compare_field not in reader.fieldnames:
                     bail = True
-                    print("ERROR: Input file missing compare field '%s': %s" % (compare_field, ifile))
+                    vprint("ERROR: Input file missing compare field '%s': %s" % (compare_field, ifile))
 
     # Check output file
     if output_csv_file is None:
         bail = True
-        print("ERROR: Need an output CSV file")
+        vprint("ERROR: Need an output CSV file")
     elif not overwrite_mode and isfile(output_csv_file):
         bail = True
-        print("ERROR: Overwrite=%s and output file exists: %s" % (overwrite_mode, output_csv_file))
+        vprint("ERROR: Overwrite=%s and output file exists: %s" % (overwrite_mode, output_csv_file))
 
     # Found an error - exit
     if bail:
@@ -343,11 +392,11 @@ Compare vessel names for all scrapers but use non-default MMSI fields
     #/*     Update user
     #/* ----------------------------------------------------------------------- */#
 
-    print("Input files:")
+    vprint("Input files:")
     for ifile in input_csv_files:
-        print("    %s" % ifile)
-    print("Output file:")
-    print("    %s" % output_csv_file)
+        vprint("    %s" % ifile)
+    vprint("Output file:")
+    vprint("    %s" % output_csv_file)
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Get unique list of MMSI numbers
@@ -355,7 +404,7 @@ Compare vessel names for all scrapers but use non-default MMSI fields
 
     bail = False
     unique_mmsi = []
-    print("Getting a unique list of MMSI values ...")
+    vprint("Getting a unique list of MMSI values ...")
     for ifile in input_csv_files:
         with open(ifile, 'r') as f:
             reader = csv.DictReader(f)
@@ -366,7 +415,7 @@ Compare vessel names for all scrapers but use non-default MMSI fields
                     sub_mmsi.append(mmsi)
                 else:
                     bail = True
-                    print("    ERROR: MMSI '%s' appears multiple times in: %s" % (mmsi, ifile))
+                    vprint("    ERROR: MMSI '%s' appears multiple times in: %s" % (mmsi, ifile))
             unique_mmsi += sub_mmsi
     unique_mmsi = list(set(unique_mmsi))
     unique_mmsi.sort()
@@ -378,7 +427,7 @@ Compare vessel names for all scrapers but use non-default MMSI fields
     #/* ----------------------------------------------------------------------- */#
 
     # Convert input files to dictionaries with MMSI values as keys for more efficient data access
-    print("Caching input files ...")
+    vprint("Caching input files ...")
     cache = {ifile: file2dict(mmsi_field, ifile) for ifile in input_csv_files}
 
     #/* ----------------------------------------------------------------------- */#
@@ -399,7 +448,7 @@ Compare vessel names for all scrapers but use non-default MMSI fields
     num_match_count = 0
     prog_i = 0
     prog_max = len(unique_mmsi)
-    print("Comparing records ...")
+    vprint("Comparing records ...")
     with open(output_csv_file, 'w') as f:
         writer = csv.DictWriter(f, fieldnames=[o_mmsi_field])
         writer.writeheader()
@@ -407,8 +456,9 @@ Compare vessel names for all scrapers but use non-default MMSI fields
 
             # Update user
             prog_i += 1
-            sys.stdout.write("\r\x1b[K" + "    %s/%s" % (str(prog_i), str(prog_max)))
-            sys.stdout.flush()
+            if VERBOSE_MODE:
+                sys.stdout.write("\r\x1b[K" + "    %s/%s" % (str(prog_i), str(prog_max)))
+                sys.stdout.flush()
             compare_list = []
             for ifile in input_csv_files:
                 try:
@@ -421,8 +471,8 @@ Compare vessel names for all scrapers but use non-default MMSI fields
             if compare_list and len(set(compare_list)) is not 1:
                 num_match_count += 1
                 writer.writerow({o_mmsi_field: mmsi})
-    print(" - Done")
-    print("Found %s non-matching records" % num_match_count)
+    vprint(" - Done")
+    vprint("Found %s non-matching records" % num_match_count)
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Cleanup and final return
