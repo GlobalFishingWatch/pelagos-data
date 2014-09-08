@@ -10,6 +10,7 @@ Installing
         $ git clone https://github.com/SkyTruth/pelagos-data
         $ cd pelagos-data/VesselInfo
         $ pip install -r requirements.txt
+        $ ./run_tests.py
         $ pip install . --upgrade
 
 Commandline Utilities
