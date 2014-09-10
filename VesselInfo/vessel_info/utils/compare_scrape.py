@@ -367,7 +367,13 @@ Compare vessel names for all scrapers but use non-default MMSI fields
                 i += 1
                 input_csv_files.append(expanduser(arg))
 
+        # This catches several conditions:
+        #   1. The last argument is a flag that requires parameters but the user did not supply the parameter
+        #   2. The arg parser did not properly consume all parameters for an argument
+        #   3. The arg parser did not properly iterate the 'i' variable
+        #   4. An argument split on '=' doesn't have anything after '=' - e.g. '--output-file='
         except (IndexError, ValueError):
+            i += 1
             arg_error = True
             print("ERROR: An argument has invalid parameters - current arg: %s" % arg)
 
