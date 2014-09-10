@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+
 # This document is part of pelagos-data
 # https://github.com/skytruth/pelagos-data
 
@@ -30,11 +33,22 @@
 
 
 """
-Components for commandline utilities
+Retrieve Greenpeace's vessel blacklist as a CSV
+
+See vessel_info.utils.gp_blacklist for more information
 """
 
 
-import common
-import compare_scrape
-import gp_blacklist
-import mmsi2info
+import sys
+
+import vessel_info
+
+
+#/* ======================================================================= */#
+#/*     Command line execution
+#/* ======================================================================= */#
+
+if __name__ == '__main__':
+
+    # Remove script name and give the rest to main
+    sys.exit(vessel_info.utils.gp_blacklist.main(sys.argv[1:]))

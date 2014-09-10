@@ -222,6 +222,249 @@ class TestAutoScrape(unittest.TestCase):
 
 
 #/* ======================================================================= */#
+#/*     Define TestGPBlacklistVessel() class
+#/* ======================================================================= */#
+
+class TestGPBlacklistVessel(unittest.TestCase):
+
+    def test_get_scraper_options(self):
+        self.assertIsInstance(scrape.gp_blacklist_vessel(None, get_scraper_options=True), dict)
+
+    def test_get_output_fields(self):
+        self.assertIsInstance(scrape.gp_blacklist_vessel(None, get_output_fields=True), list)
+
+    def test_output(self):
+
+        expected_output = {
+            'http://blacklist.greenpeace.org/1/vessel/show/170-aladin': {
+                'blacklisted_in': 'Greenpeace\nReason for blacklisting: ICCAT Recommendation [03-04] relating to Mediterranean swordfish prohibits the use of driftnets for fisheries of large pelagics in the Mediterranean Sea. It is the responsibility of all ICCAT Contracting Parties to enforce this Recommendation and adopt a specific\r\nmanagement plan in order to protect the stock of swordfish in the Mediterranean Sea and sustain this fishery. This continued illegal activity should have come to an end when the European Union banned the use of driftnets for catching a wide range of pelagic fishes. EC Regulation EC/1239/98, that entered into force on January 2002.\nSource of IUU information: Vessel observed during Greenpeace Mediterranean Rainbow Warrior tour 2007',
+                'callsign': 'Unknown',
+                'class': 'Driftnetter',
+                'controller_region': 'Tunisia',
+                'date': '2007-06-20',
+                'fishing_number': 'MO800',
+                'flag': 'Tunisia',
+                'imo': 'Unknown',
+                'links': None,
+                'mmsi': None,
+                'name': 'Aladin',
+                'notes': 'On the morning of 20 June 2007, a dozen vessels were spotted from the Rainbow Warrior, among them six Tunisian driftnet vessels which were identified as fishing on the high seas.',
+                'owner_company': None,
+                'previous_callsign': None,
+                'previous_companies': None,
+                'previous_flags': None,
+                'previous_names': None,
+                'source': 'GreenpeaceBlacklist',
+                'system': None,
+                'url': 'http://blacklist.greenpeace.org/1/vessel/show/170-aladin',
+                'vessel_length': None
+            },
+            'http://blacklist.greenpeace.org/1/vessel/show/161-biagio-anna': {
+                'blacklisted_in': 'Greenpeace\nReason for blacklisting: ICCAT Recommendation [03-04] relating to Mediterranean swordfish prohibits the use of driftnets for fisheries of large pelagics in the Mediterranean Sea. It is the responsibility of all ICCAT Contracting Parties to enforce this Recommendation and adopt a specific\r\nmanagement plan in order to protect the stock of swordfish in the Mediterranean Sea and sustain this fishery. This continued illegal activity should have come to an end when the European Union banned the use of driftnets for catching a wide range of pelagic fishes. EC Regulation EC/1239/98, that entered into force on January 2002.\nSource of IUU information: Vessel was observed by  Greenpeace Mediterranean Rainbow Warrior tour 2006',
+                'callsign': 'Unknown',
+                'class': 'Driftnetter',
+                'controller_region': 'Italy',
+                'date': '2009-04-26',
+                'fishing_number': '03CS00822',
+                'flag': 'Italy',
+                'imo': 'Unknown',
+                'links': None,
+                'mmsi': None,
+                'name': 'Biagio Anna',
+                'notes': 'From 17 June to 15 July 2006, Greenpeace documented the activities of the Italian driftnet fleet targeting swordfish in the Thyrrenian and Ionian Seas. Five Italian vessels were found to be fishing for swordfish using driftnets. These data was presented to the 20th Regular Meeting of the ICCAT Commission in Antalya, November 2007. The information was not contested neither we know of any action taken against these vessels.',
+                'owner_company': None,
+                'previous_callsign': None,
+                'previous_companies': None,
+                'previous_flags': None,
+                'previous_names': None,
+                'source': 'GreenpeaceBlacklist',
+                'system': None,
+                'url': 'http://blacklist.greenpeace.org/1/vessel/show/161-biagio-anna',
+                'vessel_length': '12.2'
+            },
+            'http://blacklist.greenpeace.org/1/vessel/show/222-marcia-707': {
+                'blacklisted_in': 'Greenpeace\nReason for blacklisting: Illegal fishing inside Sierra Leone inshore zone\nSource of IUU information: http://www.lloydslistintelligence.com/llint/vessels/overview.htm?vesselId=123063&channel;=home\r\n\r\nhttp://ejfoundation.org/sites/default/files/public/Pirate%20Fishing%20Exposed.pdf\r\n\r\nhttps://webgate.ec.europa.eu/sanco/traces/output/KR/FFP_KR_fr.pdf',
+                'callsign': '6MBA',
+                'class': 'Trawler',
+                'controller_region': 'Korea, Republic of',
+                'date': '2011-01-18',
+                'fishing_number': None,
+                'flag': 'Korea, Republic of',
+                'imo': '7205336',
+                'links': None,
+                'mmsi': None,
+                'name': 'Marcia 707',
+                'notes': 'Between January and March 2011, EJF documented four \rvessels fishing illegally in the inshore areas near Sherbro \rIsland in Sierra Leone: Medra, Marcia 707, 515 Amapola \rand Seta 70. All of the vessels are Korean-flagged and \raccredited to export their fish to the EU, though Medra \rhas also been listed as flagged to Honduras. The vessels \rwere responsible for causing extensive damage to local \rfishing equipment in the IEZ.',
+                'owner_company': 'Bugang International Company Limited',
+                'previous_callsign': None,
+                'previous_companies': None,
+                'previous_flags': None,
+                'previous_names': None,
+                'source': 'GreenpeaceBlacklist',
+                'system': None,
+                'url': 'http://blacklist.greenpeace.org/1/vessel/show/222-marcia-707',
+                'vessel_length': '57.7'
+            },
+            'http://blacklist.greenpeace.org/1/vessel/show/217-tawariq-1': {
+                'blacklisted_in': 'Greenpeace\nReason for blacklisting: Fishing without license against section 18',
+                'callsign': 'A4DH8',
+                'class': 'Longliner',
+                'controller_region': 'Oman',
+                'date': '2012-03-25',
+                'fishing_number': None,
+                'flag': 'Oman',
+                'imo': "'8619376",
+                'links': None,
+                'mmsi': None,
+                'name': 'Tawariq 1',
+                'notes': '35 Crew members of FV TAWARIQ-1 and the Mombassa based ship agent of the fishing boat appeared before Dar-es-Salaam court of law on 2nd July, 2009  charged with fishing without a license contrary to section 18',
+                'owner_company': 'Seas Tawariq Co LLC',
+                'previous_callsign': None,
+                'previous_companies': None,
+                'previous_flags': None,
+                'previous_names': 'Odine Malagasy',
+                'source': 'GreenpeaceBlacklist',
+                'system': None,
+                'url': 'http://blacklist.greenpeace.org/1/vessel/show/217-tawariq-1',
+                'vessel_length': '43'
+            }
+        }
+
+        for url, expected in expected_output.iteritems():
+            actual = scrape.gp_blacklist_vessel(url)
+            self.assertDictEqual(expected, actual)
+
+
+#/* ======================================================================= */#
+#/*     Define TestGPBlacklist() class
+#/* ======================================================================= */#
+
+class TestGPBlacklist(unittest.TestCase):
+
+    def test_get_scraper_options(self):
+        self.assertIsInstance(scrape.gp_blacklist(get_scraper_options=True), dict)
+
+    def test_get_output_fields(self):
+        self.assertIsInstance(scrape.gp_blacklist(get_output_fields=True), list)
+
+    def test_return_urls(self):
+
+        must_include = [
+            'http://blacklist.greenpeace.org/1/vessel/show/33-feng-rong-shen',
+            'http://blacklist.greenpeace.org/1/vessel/show/143-juanita-broken-up',
+            'http://blacklist.greenpeace.org/1/vessel/show/168-ahmed-khalil',
+            'http://blacklist.greenpeace.org/1/vessel/show/48-ying-jen-636',
+            'http://blacklist.greenpeace.org/1/vessel/show/53-caribe'
+        ]
+
+        result = scrape.gp_blacklist(return_urls=True)
+        for url in must_include:
+            self.assertTrue(url in result)
+
+    def test_return_results(self):
+
+        expected = {
+            'http://blacklist.greenpeace.org/1/vessel/show/170-aladin': {
+                'blacklisted_in': 'Greenpeace\nReason for blacklisting: ICCAT Recommendation [03-04] relating to Mediterranean swordfish prohibits the use of driftnets for fisheries of large pelagics in the Mediterranean Sea. It is the responsibility of all ICCAT Contracting Parties to enforce this Recommendation and adopt a specific\r\nmanagement plan in order to protect the stock of swordfish in the Mediterranean Sea and sustain this fishery. This continued illegal activity should have come to an end when the European Union banned the use of driftnets for catching a wide range of pelagic fishes. EC Regulation EC/1239/98, that entered into force on January 2002.\nSource of IUU information: Vessel observed during Greenpeace Mediterranean Rainbow Warrior tour 2007',
+                'callsign': 'Unknown',
+                'class': 'Driftnetter',
+                'controller_region': 'Tunisia',
+                'date': '2007-06-20',
+                'fishing_number': 'MO800',
+                'flag': 'Tunisia',
+                'imo': 'Unknown',
+                'links': None,
+                'mmsi': None,
+                'name': 'Aladin',
+                'notes': 'On the morning of 20 June 2007, a dozen vessels were spotted from the Rainbow Warrior, among them six Tunisian driftnet vessels which were identified as fishing on the high seas.',
+                'owner_company': None,
+                'previous_callsign': None,
+                'previous_companies': None,
+                'previous_flags': None,
+                'previous_names': None,
+                'source': 'GreenpeaceBlacklist',
+                'system': None,
+                'url': 'http://blacklist.greenpeace.org/1/vessel/show/170-aladin',
+                'vessel_length': None
+            },
+            'http://blacklist.greenpeace.org/1/vessel/show/161-biagio-anna': {
+                'blacklisted_in': 'Greenpeace\nReason for blacklisting: ICCAT Recommendation [03-04] relating to Mediterranean swordfish prohibits the use of driftnets for fisheries of large pelagics in the Mediterranean Sea. It is the responsibility of all ICCAT Contracting Parties to enforce this Recommendation and adopt a specific\r\nmanagement plan in order to protect the stock of swordfish in the Mediterranean Sea and sustain this fishery. This continued illegal activity should have come to an end when the European Union banned the use of driftnets for catching a wide range of pelagic fishes. EC Regulation EC/1239/98, that entered into force on January 2002.\nSource of IUU information: Vessel was observed by  Greenpeace Mediterranean Rainbow Warrior tour 2006',
+                'callsign': 'Unknown',
+                'class': 'Driftnetter',
+                'controller_region': 'Italy',
+                'date': '2009-04-26',
+                'fishing_number': '03CS00822',
+                'flag': 'Italy',
+                'imo': 'Unknown',
+                'links': None,
+                'mmsi': None,
+                'name': 'Biagio Anna',
+                'notes': 'From 17 June to 15 July 2006, Greenpeace documented the activities of the Italian driftnet fleet targeting swordfish in the Thyrrenian and Ionian Seas. Five Italian vessels were found to be fishing for swordfish using driftnets. These data was presented to the 20th Regular Meeting of the ICCAT Commission in Antalya, November 2007. The information was not contested neither we know of any action taken against these vessels.',
+                'owner_company': None,
+                'previous_callsign': None,
+                'previous_companies': None,
+                'previous_flags': None,
+                'previous_names': None,
+                'source': 'GreenpeaceBlacklist',
+                'system': None,
+                'url': 'http://blacklist.greenpeace.org/1/vessel/show/161-biagio-anna',
+                'vessel_length': '12.2'
+            },
+            'http://blacklist.greenpeace.org/1/vessel/show/222-marcia-707': {
+                'blacklisted_in': 'Greenpeace\nReason for blacklisting: Illegal fishing inside Sierra Leone inshore zone\nSource of IUU information: http://www.lloydslistintelligence.com/llint/vessels/overview.htm?vesselId=123063&channel;=home\r\n\r\nhttp://ejfoundation.org/sites/default/files/public/Pirate%20Fishing%20Exposed.pdf\r\n\r\nhttps://webgate.ec.europa.eu/sanco/traces/output/KR/FFP_KR_fr.pdf',
+                'callsign': '6MBA',
+                'class': 'Trawler',
+                'controller_region': 'Korea, Republic of',
+                'date': '2011-01-18',
+                'fishing_number': None,
+                'flag': 'Korea, Republic of',
+                'imo': '7205336',
+                'links': None,
+                'mmsi': None,
+                'name': 'Marcia 707',
+                'notes': 'Between January and March 2011, EJF documented four \rvessels fishing illegally in the inshore areas near Sherbro \rIsland in Sierra Leone: Medra, Marcia 707, 515 Amapola \rand Seta 70. All of the vessels are Korean-flagged and \raccredited to export their fish to the EU, though Medra \rhas also been listed as flagged to Honduras. The vessels \rwere responsible for causing extensive damage to local \rfishing equipment in the IEZ.',
+                'owner_company': 'Bugang International Company Limited',
+                'previous_callsign': None,
+                'previous_companies': None,
+                'previous_flags': None,
+                'previous_names': None,
+                'source': 'GreenpeaceBlacklist',
+                'system': None,
+                'url': 'http://blacklist.greenpeace.org/1/vessel/show/222-marcia-707',
+                'vessel_length': '57.7'
+            },
+            'http://blacklist.greenpeace.org/1/vessel/show/217-tawariq-1': {
+                'blacklisted_in': 'Greenpeace\nReason for blacklisting: Fishing without license against section 18',
+                'callsign': 'A4DH8',
+                'class': 'Longliner',
+                'controller_region': 'Oman',
+                'date': '2012-03-25',
+                'fishing_number': None,
+                'flag': 'Oman',
+                'imo': "'8619376",
+                'links': None,
+                'mmsi': None,
+                'name': 'Tawariq 1',
+                'notes': '35 Crew members of FV TAWARIQ-1 and the Mombassa based ship agent of the fishing boat appeared before Dar-es-Salaam court of law on 2nd July, 2009  charged with fishing without a license contrary to section 18',
+                'owner_company': 'Seas Tawariq Co LLC',
+                'previous_callsign': None,
+                'previous_companies': None,
+                'previous_flags': None,
+                'previous_names': 'Odine Malagasy',
+                'source': 'GreenpeaceBlacklist',
+                'system': None,
+                'url': 'http://blacklist.greenpeace.org/1/vessel/show/217-tawariq-1',
+                'vessel_length': '43'
+            }
+        }
+
+        actual = scrape.gp_blacklist()
+        for vessel in actual:
+            if vessel['url'] in expected:
+                self.assertDictEqual(expected[vessel['url']], vessel)
+
+
+#/* ======================================================================= */#
 #/*     Command Line Execution
 #/* ======================================================================= */#
 

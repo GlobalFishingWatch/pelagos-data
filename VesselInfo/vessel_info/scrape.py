@@ -55,6 +55,9 @@ DEFAULT_PAUSE_MIN = 0
 DEFAULT_PAUSE_MAX = 3
 DEFAULT_TIMEOUT = 30
 USER_AGENTS = ['Mozilla/30.0']
+DEFAULT_USER_AGENT = 'Mozilla/30.0'
+DEFAULT_SCRAPER_OFIELDS = ['name', 'class', 'callsign', 'imo', 'flag', 'system', 'mmsi', 'source']
+DEFAULT_OUTPUT_TEMPLATE = {i: None for i in DEFAULT_SCRAPER_OFIELDS}
 
 
 #/* ======================================================================= */#
@@ -609,26 +612,19 @@ def auto_scrape(mmsi_scraper, _get_options=False, **kwargs):
     Kwargs:
 
         retry (int): Maximum number of times the scraper should be called before
-            a failure is assumed.  If the scraper returns a non-None result before
-            the max is reached, the scrape is considered a success and subsequent
-            attempts are not made.
-
+                     a failure is assumed.  If the scraper returns a non-None
+                     result before the max is reached, the scrape is considered
+                     a success and subsequent attempts are not made.
         pause (int|float|str|unicode): Amount of time to wait between each scrape
-            attempt.  Set to 'random' to pick a value between pause_min/max
-
+                                       attempt.  Set to 'random' to pick a value
+                                       between pause_min/max
         pause_min (int|float): Min value for use with pause='random'
-
         pause_max (int|float): Max value for use with pause='random'
-
-        stream (obj w/ .write()): An open file object or object supporting
-            a .write() method.  All exceptions are caught and sent to this
-            stream.
-
+        stream (file): An open file object or object supporting a .write() method.
+                       All exceptions are caught and sent to this stream.
         stream_prefix (str): Prefix for all stream writes - used for indentation
-            in the batch scripts
-
+                             in the batch scripts
         skip_scraper (list|tuple|"str,str,..."): List of scrapers to skip
-
         keep_scraper (list|tuple|"str,str,..."): List of scrapers to call
 
 
@@ -732,3 +728,341 @@ def auto_scrape(mmsi_scraper, _get_options=False, **kwargs):
                                                                       attempt_num, retry, e))
 
     return result
+
+
+#/* ======================================================================= */#
+#/*     Define gp_blacklist_vessel() function
+#/* ======================================================================= */#
+
+def gp_blacklist_vessel(url, get_scraper_options=False, get_output_fields=False, **kwargs):
+
+    """
+    Given a URL to a blacklisted Greenpeace vessel collect available information
+
+
+    Args:
+
+        url     (str): URL to a blacklisted vessel's page
+
+
+    Kwargs:
+
+        headers         (dict): Header to use for HTTP request
+                                [default: {'User-agent': self.user_agent}]
+        timeout         (int): Number of seconds to wait before assuming the
+                               HTTP request is a failure
+                               [default: 30]
+        null            (anything): Value to use when no value could be scraped
+                                    [default: None]
+        scraper_name    (anything): Name of this scraper
+                                    [default: GreenpeaceBlacklist]
+
+    Field Map:
+
+        Website                     Output Dict
+
+        Blacklisted In              blacklisted_in
+        IRCS                        callsign
+        Vessel Type                 class
+        Controller Country/Region   controller_region
+        Fishing Number              fishing_number
+        Flag                        flag
+        IMO                         imo
+        Links                       links
+        Satcom                      mmsi
+        Name                        name
+        Notes                       notes
+        Owner Company               owner_company
+        Previous IRCS               previous_callsign
+        Previous Companies          previous_companies
+        Previous Flags              previous_flags
+        Previous Names              previous_names
+        Vessel Length               vessel_length
+        date                        Some fields contain the date updated
+                                    so if the date is present in at least
+                                    one field, the first occurrence is returned
+        url                         Input URL
+        source                      Name of scraper
+        system                      AIS vs. VMS vs. etc. - Currently null for
+                                    this scraper
+
+
+    Sample Output:
+
+        {
+            'blacklisted_in': 'Greenpeace\nReason for blacklisting: <TRUNCATED>',
+            'callsign': 'Unknown',
+            'class': 'Driftnetter',
+            'controller_region': 'Tunisia',
+            'date': '2007-06-20',
+            'fishing_number': None,
+            'flag': 'Tunisia',
+            'imo': 'Unknown',
+            'links': 'http://www.greenpeace.org/raw/content/ <TRUNCATED>',
+            'mmsi': None,
+            'name': 'Ahmed Helmi',
+            'notes': 'On the morning of 20 June 2007, a dozen <TRUNCATED>',
+            'owner_company': None,
+            'previous_callsign': None,
+            'previous_companies': None,
+            'previous_flags': None,
+            'previous_names': None,
+            'source': None,
+            'system': None,
+            'url': 'http://blacklist.greenpeace.org//1/vessel/ <TRUNCATED>',
+            'vessel_length': None
+        }
+    """
+
+    global DEFAULT_TIMEOUT
+    global DEFAULT_USER_AGENT
+    global DEFAULT_SCRAPER_OFIELDS
+
+    # Parse arguments
+    headers = kwargs.get('headers', {'User-agent': DEFAULT_USER_AGENT})
+    timeout = kwargs.get('timeout', DEFAULT_TIMEOUT)
+    null = kwargs.get('null', None)
+    scraper_name = kwargs.get('scraper_name', 'GreenpeaceBlacklist')
+
+    # Output containers
+    output = {i: null for i in DEFAULT_SCRAPER_OFIELDS + [
+        'previous_names', 'blacklisted_in', 'notes', 'previous_flags',
+        'owner_company', 'previous_companies', 'previous_callsign', 'vessel_length',
+        'controller_region', 'fishing_number', 'links', 'date', 'url'
+    ]}
+
+    if get_scraper_options:
+        return gp_blacklist(get_scraper_options=True)
+
+    if get_output_fields:
+        return output.keys()
+
+    # Make request, check for errors and load into BeautifulSoup
+    response = requests.get(url, timeout=timeout, headers=headers)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text)
+    response.close()
+
+    # Extract the table containing the vessel attributes
+    table = soup.find_all('table', {'id': 'detail'})
+    if len(table) is not 1:
+        soup = None
+        raise ValueError("Unexpected BeautifulSoup result - found multiple vessel tables")
+
+    # Add known information
+    output['url'] = url
+    output['source'] = scraper_name
+
+    # Extract information
+    soup = None
+    table_rows = table[0].find_all('tr')
+    for idx, tr in enumerate(table_rows):
+
+        txt = tr.text.strip().split(':')[0]
+        _val = tr.find('td').text.strip()
+        val = tr.find('td').text.rsplit('(')[0].encode('utf-8').strip()
+        if output['date'] is None:
+            date = _val.split('(')
+            if len(date) > 1:
+                output['date'] = date[1].replace(')', '')
+        
+        if txt == 'Name':
+            output['name'] = val
+
+        elif txt == 'Previous Name(s)':
+            output['previous_names'] = val
+
+        elif txt == 'Blacklisted In':
+            output['blacklisted_in'] = val
+
+        elif txt == 'Notes':
+            output['notes'] = val
+
+        elif txt == 'Flag':
+            output['flag'] = val
+
+        elif txt == 'Previous Flags':
+            output['previous_flags'] = val
+
+        elif txt == 'Owner Company':
+            output['owner_company'] = val
+
+        elif txt == 'Previous Companies':
+            output['previous_companies'] = val
+
+        elif txt == 'IRCS':
+            output['callsign'] = val
+
+        elif txt == 'Previous IRCS':
+            output['previous_callsign'] = val
+
+        elif txt == 'IMO Number':
+            output['imo'] = val
+
+        elif txt == 'Vessel Type':
+            output['class'] = val
+
+        elif txt == 'Vessel Length':
+            output['vessel_length'] = val
+
+        elif txt == 'Controller Country/Region':
+            output['controller_region'] = val
+
+        elif txt == 'Satcom Number':
+            output['mmsi'] = val
+
+        elif txt == 'Fishing Number':
+            output['fishing_number'] = val
+
+        elif txt == 'Links':
+            output['links'] = val
+
+    # Make empty strings null
+    for k, v in output.copy().iteritems():
+        if not v:
+            v = null
+        output[k] = v
+
+    return output
+
+
+#/* ======================================================================= */#
+#/*     Define gp_blacklist() function
+#/* ======================================================================= */#
+
+def gp_blacklist(get_scraper_options=False, get_output_fields=False, **kwargs):
+
+    """
+    Given a URL to a blacklisted Greenpeace vessel collect available information
+
+
+    Args:
+
+        url     (str): URL to a blacklisted vessel's page
+
+
+    Kwargs:
+
+        headers         (dict): Header to use for HTTP request
+                                [default: {'User-agent': self.user_agent}]
+
+        timeout         (int): Number of seconds to wait before assuming the
+                               HTTP request is a failure
+                               [default: 30]
+
+        null            (anything): Value to use when no value could be scraped
+                                    [default: None]
+
+        scraper_name    (anything): Name of this scraper
+                                    [default: GreenpeaceBlacklist]
+
+
+    Field Map:
+
+        Website                     Output Dict
+
+        Blacklisted In              blacklisted_in
+        IRCS                        callsign
+        Vessel Type                 class
+        Controller Country/Region   controller_region
+        Fishing Number              fishing_number
+        Flag                        flag
+        IMO                         imo
+        Links                       links
+        Satcom                      mmsi
+        Name                        name
+        Notes                       notes
+        Owner Company               owner_company
+        Previous IRCS               previous_callsign
+        Previous Companies          previous_companies
+        Previous Flags              previous_flags
+        Previous Names              previous_names
+        Vessel Length               vessel_length
+        date                        Some fields contain the date updated
+                                    so if the date is present in at least
+                                    one field, the first occurrence is returned
+        url                         Input URL
+        source                      Name of scraper
+        system                      AIS vs. VMS vs. etc. - Currently null for
+                                    this scraper
+
+
+    Sample Output:
+
+        A list of output from gp_blacklist_vessel()
+
+        [
+            {
+                'name': 'Vessel1',
+                'blacklisted_in': 'Greenpeace\nReason for blacklisting: <TRUNCATED>',
+                'callsign': 'Unknown',
+                'class': 'Driftnetter',
+                'controller_region': 'Tunisia',
+                'date': '2007-06-20',
+                ...
+            },
+            {
+                'name': 'Vessel2',
+                'blacklisted_in': 'Greenpeace\nReason for blacklisting: <TRUNCATED>',
+                'callsign': 'Unknown',
+                'class': 'Driftnetter',
+                'controller_region': 'Tunisia',
+                'date': '2007-06-20',
+                ...
+            },
+            ...
+        ]
+
+
+        With return_urls=True
+
+            [
+                'http://blacklist.greenpeace.org//1/vessel/show/169-ahmed-helmi',
+                'http://blacklist.greenpeace.org/1/vessel/show/43-lung-soon-888',
+                'http://blacklist.greenpeace.org/1/vessel/show/111-viarsa-i-scrapped'
+            ]
+    """
+
+    global DEFAULT_TIMEOUT
+    global DEFAULT_USER_AGENT
+
+    _scraper_options = {
+        'url': "(str): Page containing the list of all vessels",
+        'timeout': "(int): Number of seconds to wait until a scrape request is considered a failure",
+        'headers': "(dict): Header parameter for each scrape request",
+        'base_vessel_url': "(str): Base URL to which the vessel path is appended"
+    }
+    if get_scraper_options:
+        return _scraper_options
+
+    if get_output_fields:
+        return gp_blacklist_vessel(None, get_output_fields=True)
+
+    # Parse arguments
+    url = kwargs.get('url', 'http://blacklist.greenpeace.org/1/vessel/list?gp_blacklist=1&startswith=A-Z')
+    base_vessel_url = kwargs.get('base_vessel_url', 'http://blacklist.greenpeace.org')
+    headers = kwargs.get('headers', {'User-agent': DEFAULT_USER_AGENT})
+    timeout = kwargs.get('timeout', DEFAULT_TIMEOUT)
+    return_urls = kwargs.get('return_urls', False)
+
+    # The inbound URL's all have a leading '/' so remove it from the base_url
+    if base_vessel_url[-1] == '/':
+        base_vessel_url = base_vessel_url[:-1]
+
+    # Make request, check for errors and load into BeautifulSoup
+    response = requests.get(url, timeout=timeout, headers=headers)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text)
+
+    # Vessels are referenced internally by a UID which is just their row number in the site's table
+    # Get a list of vessels web pages to scrape
+    table = soup.find_all('table', {'id': 'blacklist', 'class': 'vessels'})
+    if len(table) is not 1:
+        soup = None
+        raise ValueError("Unexpected BeautifulSoup result - found multiple vessel tables")
+    links = [base_vessel_url + link['href'] for link in table[0].find_all('a', href=True)]
+
+    if return_urls:
+        return links
+    else:
+        return [gp_blacklist_vessel(url) for url in links]
