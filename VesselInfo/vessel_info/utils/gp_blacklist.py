@@ -340,7 +340,7 @@ Same as above but wait 15 seconds max for a HTTP response
 
         progress_i = 0
         progress_max = len(vessel_list)
-        vprint("Found %s vessels - processing" % progress_max)
+        vprint("Found %s vessels - processing ..." % progress_max)
         for vessel_url in vessel_list:
 
             # Update user

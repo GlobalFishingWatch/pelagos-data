@@ -919,7 +919,7 @@ def gp_blacklist_vessel(url, get_scraper_options=False, get_output_fields=False,
 
     # Make empty strings null
     for k, v in output.copy().iteritems():
-        if not v or v.lower() == 'unknown':
+        if not v:
             v = null
         output[k] = v
 
