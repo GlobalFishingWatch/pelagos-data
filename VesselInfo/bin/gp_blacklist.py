@@ -33,9 +33,9 @@
 
 
 """
-Scrape MMSI information for all rows in an input CSV
+Retrieve Greenpeace's vessel blacklist as a CSV
 
-See vessel_info.utils.mmsi2info for more information
+See vessel_info.utils.gp_blacklist for more information
 """
 
 
@@ -51,4 +51,4 @@ import vessel_info
 if __name__ == '__main__':
 
     # Remove script name and give the rest to main
-    sys.exit(vessel_info.utils.mmsi2info.main(sys.argv[1:]))
+    sys.exit(vessel_info.utils.gp_blacklist.main(sys.argv[1:]))

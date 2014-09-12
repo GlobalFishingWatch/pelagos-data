@@ -33,22 +33,29 @@
 
 
 """
-Scrape MMSI information for all rows in an input CSV
-
-See vessel_info.utils.mmsi2info for more information
+Unittests for vessel_info.utils.mmsi2info
 """
 
 
-import sys
+from __future__ import unicode_literals
 
-import vessel_info
+import sys
+import unittest
+
+from vessel_info import utils
 
 
 #/* ======================================================================= */#
-#/*     Command line execution
+#/*     Define TestMain() class
+#/* ======================================================================= */#
+
+class TestMain(unittest.TestCase):
+    pass
+
+
+#/* ======================================================================= */#
+#/*     Command Line Execution
 #/* ======================================================================= */#
 
 if __name__ == '__main__':
-
-    # Remove script name and give the rest to main
-    sys.exit(vessel_info.utils.mmsi2info.main(sys.argv[1:]))
+    sys.exit(unittest.main())

@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-
 # This document is part of pelagos-data
 # https://github.com/skytruth/pelagos-data
 
@@ -33,10 +30,11 @@
 
 
 """
-Utilities required for collecting vessel information from a variety of websites
+VesselInfo - A global marine vessel database
 """
 
 
 import scrape
-from settings import __version__, __release__, __author__, __license__
-import util
+from settings import __version__, __release__, __author__, __license__, __author_email__, __source__
+import utils
+import tests

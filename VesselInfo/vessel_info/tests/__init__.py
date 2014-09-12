@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-
 # This document is part of pelagos-data
 # https://github.com/skytruth/pelagos-data
 
@@ -33,22 +30,40 @@
 
 
 """
-Scrape MMSI information for all rows in an input CSV
-
-See vessel_info.utils.mmsi2info for more information
+Unittests and test runner
 """
 
 
+from os.path import dirname
 import sys
+import unittest
 
-import vessel_info
+import testdata
+import test_scrape
 
 
 #/* ======================================================================= */#
-#/*     Command line execution
+#/*     Define run_tests() function
 #/* ======================================================================= */#
 
-if __name__ == '__main__':
+def run_tests(path=dirname(__file__), stream=sys.stderr, descriptions=True, verbosity=2):
 
-    # Remove script name and give the rest to main
-    sys.exit(vessel_info.utils.mmsi2info.main(sys.argv[1:]))
+    """
+    Function to discover and run all unit tests
+
+    :param stream: output stream
+    :type stream: file
+    :param descriptions: determines whether tests are printed or not
+    :type descriptions: bool
+    :param verbosity: specifies how verbose test responses are
+    :type verbosity: int
+    :rtype: unittest.runner.TextTestResult
+    """
+
+    # Discover tests
+    test_suite = unittest.TestLoader().discover(path)
+
+    # Run tests
+    result = unittest.TextTestRunner(stream=stream, descriptions=descriptions, verbosity=verbosity).run(test_suite)
+
+    return result

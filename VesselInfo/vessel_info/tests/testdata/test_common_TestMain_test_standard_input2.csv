@@ -1,0 +1,11 @@
+mmsi,cfield
+5,match
+6,no_match
+7,no_match
+8,no_match
+9,MATCH
+10,1match
+11,matchymatchy
+12,_ignorenomatch
+13,match
+99,MATCH
