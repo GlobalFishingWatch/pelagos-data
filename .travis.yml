@@ -41,3 +41,6 @@ install:
   - "pip install -r VesselInfo/requirements.txt"
 
 script: ./VesselInfo/run_tests.py VesselInfo/vessel_info
+
+notifications:
+  flowdock: d155ceb5c276d1065a2e6be5b057da84
