@@ -41,8 +41,7 @@ except ImportError:
 import os
 import sys
 
-# from . import assets
-import assets
+from . import assets
 
 
 #/* ======================================================================= */#
