@@ -200,7 +200,7 @@ class MMSI(object):
         Raises:
 
             requests.exceptions.*: Exceptions can be raised by the initial request
-                but none are suppressed
+                                   but none are suppressed
         """
 
         name = kwargs.get('name', 'MarineTraffic')
@@ -1103,6 +1103,7 @@ def iuu_vessel(url, get_output_fields=False, get_scraper_options=False, **kwargs
     """
     Given a URL to a IUU vessel information page, collect available information
 
+
     Args:
 
         url     (str): URL to a vessel's page
@@ -1134,51 +1135,58 @@ def iuu_vessel(url, get_output_fields=False, get_scraper_options=False, **kwargs
                                     [default: IUU_Vessel_List]
 
 
-        Field Map:
+    Field Map:
 
-            Website                     Output Dict
-            -------                     -----------
-            RFMO Vessel Name            name
-            IMO Number                  imo
-            Gross Tonnage               gross_tonnage
-            Length                      length
-            MMSI No.                    mmsi
-            Year of Build               year_built
-            Current Owner               owner_company
-            Status                      status
-            Vessel Type                 class
-            Current Flag                flag
-            Deadweight                  dead_weight
-            Depth                       draft
-            IRCS                        callsign
-            Shipyard                    shipyard_built
-            Operator                    operator
-            Status Date                 date
+        Website                Output Dict
+        -------                -----------
+        RFMO Vessel Name       name
+        IMO Number             imo
+        Gross Tonnage          gross_tonnage
+        Length                 length
+        MMSI No.               mmsi
+        Year of Build          year_built
+        Current Owner          owner_company
+        Status                 status
+        Vessel Type            class
+        Current Flag           flag
+        Deadweight             dead_weight
+        Depth                  draft
+        IRCS                   callsign
+        Shipyard               shipyard_built
+        Operator               operator
+        Status Date            date
 
 
-        Sample Output:
-            {
-                'callsign': u'4LPN',
-                'class': u'Fish Carrier',
-                'date': u'2008/03/02',
-                'dead_weight': u'518 tonnes',
-                'draft': u'5.19 metres',
-                'flag': u'Georgia',
-                'gross_tonnage': u'699.00 tonnes',
-                'imo': u'7436533',
-                'length': u'55.02 metres',
-                'mmsi': None,
-                'name': u'Alfa',
-                'operator': u'Fishery Group JSC',
-                'owner_company': u'Stratford Vale Corp',
-                'shipyard_built': u'Khabarovskiy Sudostroitelnyy Zavod im Kirova - Khabarovsk Yard/hull No.: 807',
-                'source': u'IUU_Vessel_List',
-                'status': u'Total Loss',
-                'system': None,
-                'url': 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=6',
-                'year_built': u'1974'
-            }
-        """
+    Returns:
+
+        {
+            'callsign': '4LPN',
+            'class': 'Fish Carrier',
+            'date': '2008/03/02',
+            'dead_weight': '518 tonnes',
+            'draft': '5.19 metres',
+            'flag': 'Georgia',
+            'gross_tonnage': '699.00 tonnes',
+            'imo': '7436533',
+            'length': '55.02 metres',
+            'mmsi': None,
+            'name': 'Alfa',
+            'operator': 'Fishery Group JSC',
+            'owner_company': 'Stratford Vale Corp',
+            'shipyard_built': 'Khabarovskiy Sudostroitelnyy Zavod im Kirova - Khabarovsk Yard/hull No.: 807',
+            'source': 'IUU_Vessel_List',
+            'status': 'Total Loss',
+            'system': None,
+            'url': 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=6',
+            'year_built': '1974'
+        }
+
+
+    Raises:
+
+    requests.exceptions.*: Exceptions can be raised by the initial request
+                           but none are suppressed
+    """
 
     global DEFAULT_TIMEOUT
     global DEFAULT_HEADERS
@@ -1292,9 +1300,12 @@ def iuu_vessel_list(get_scraper_options=False, get_output_fields=False, **kwargs
 
     Kwargs:
 
+        return_urls         (bool): If True, return a list of URL's that would be
+                                    scraped instead of actually scraping them.
+
         get_scraper_options (bool): If True, return a dictionary containing
                                     scraper options as keys and a plain text
-                                    description of what the option does
+                                    description of what the option does.
 
         get_output_fields (bool):   If True, return a list of keys present in
                                     the output dictionary.  Useful for
@@ -1304,7 +1315,7 @@ def iuu_vessel_list(get_scraper_options=False, get_output_fields=False, **kwargs
                                 [default: {'User-agent': self.user_agent}]
 
         timeout         (int): Number of seconds to wait before assuming the
-                               HTTP request is a failure
+                               HTTP request is a failure.
                                [default: 30]
 
         null            (anything): Value to use when no value could be scraped
@@ -1319,7 +1330,7 @@ def iuu_vessel_list(get_scraper_options=False, get_output_fields=False, **kwargs
         See iuu_vessel()
 
 
-    Sample Output:
+    Returns:
 
         A list where each element is output from iuu_vessel()
 
@@ -1338,7 +1349,6 @@ def iuu_vessel_list(get_scraper_options=False, get_output_fields=False, **kwargs
             ...
         ]
 
-
         With return_urls=True
 
             [
@@ -1347,6 +1357,11 @@ def iuu_vessel_list(get_scraper_options=False, get_output_fields=False, **kwargs
                 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=8',
             ]
 
+
+    Raises:
+
+        requests.exceptions.*: Exceptions can be raised by the initial request
+                               but none are suppressed
     """
 
     global DEFAULT_TIMEOUT
@@ -1371,7 +1386,7 @@ def iuu_vessel_list(get_scraper_options=False, get_output_fields=False, **kwargs
     base_vessel_url = kwargs.get('vessel_info_base_url', 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=')
     timeout = kwargs.get('timeout', DEFAULT_TIMEOUT)
     headers = kwargs.get('headers', DEFAULT_HEADERS)
-    return_links = kwargs.get('return_links', False)
+    return_urls = kwargs.get('return_urls', False)
 
     # Make request and check for errors
     response = requests.get(vessel_list_url, timeout=timeout, headers=headers)
@@ -1383,7 +1398,7 @@ def iuu_vessel_list(get_scraper_options=False, get_output_fields=False, **kwargs
 
     soup = None
     response.close()
-    if return_links:
+    if return_urls:
         return links
     else:
         return [iuu_vessel(url, **kwargs) for url in links]
