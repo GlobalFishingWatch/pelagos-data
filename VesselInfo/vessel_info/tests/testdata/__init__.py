@@ -54,3 +54,5 @@ fleetmon_20k = _data_dir + sep + 'data' + 'FleetMON_20k.csv'
 test_common_TestMain_test_standard_input1 = _data_dir + sep + 'test_common_TestMain_test_standard_input2.csv'
 test_common_TestMain_test_standard_input2 = _data_dir + sep + 'test_common_TestMain_test_standard_input1.csv'
 test_common_TestMain_test_standard_expected_output = _data_dir + sep + 'test_common_TestMain_test_standard_expected_output.csv'
+
+configfile = _data_dir + sep + 'Config.cfg'

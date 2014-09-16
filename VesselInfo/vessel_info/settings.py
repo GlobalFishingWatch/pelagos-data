@@ -38,14 +38,26 @@ try:
     from configparser import ConfigParser
 except ImportError:
     from ConfigParser import ConfigParser
-import os
 import sys
 
+from utils.common import string2type
 from . import assets
 
 
 #/* ======================================================================= */#
-#/*     Build Information
+#/*     Document information
+#/* ======================================================================= */#
+
+__all__ = ['__module_name__', '__version__', '__release__', '__author__',
+           '__author_email__', '__source__', '__license__',
+
+           'STREAM', 'CONFIG',
+
+           'write_configfile', 'load_configfile']
+
+
+#/* ======================================================================= */#
+#/*     Build information
 #/* ======================================================================= */#
 
 __module_name__ = 'VesselInfo'
@@ -142,23 +154,70 @@ def print_configfile(verbose=True, stream=STREAM, *args):
 
 
 #/* ======================================================================= */#
+#/*     Define write_configfile() function
+#/* ======================================================================= */#
+
+def write_configfile(config_dict, configfile=assets.configfile):
+
+    """
+    Convert a dictionary of config parameters into a configfile
+
+
+    Sample Input:
+
+        {
+            'FleetMON': {
+                'user': 'username',
+                'key': 'secret_key'
+            }
+        }
+
+
+    Args:
+
+        Position 0:     Config dictionary meeting sample input spec
+
+        Position 1:     Optional output configfile
+                        [default: assets.configfile]
+
+
+    Returns:
+
+        None
+    """
+
+    config = ConfigParser()
+    for section in config_dict.keys():
+        config.add_section(section)
+        for k, v in config_dict[section].iteritems():
+            config.set(section, k, v)
+
+    with open(configfile, 'w') as f:
+        config.write(f)
+
+
+#/* ======================================================================= */#
 #/*     Define load_configfile() function
 #/* ======================================================================= */#
 
-def load_configfile(populate_global=True, *args):
+def load_configfile(populate_global=True, append=False, configfile=assets.configfile):
 
     """
     Convert configfile to a dictionary and store in a global variable for access
 
     Args:
 
-        Position 0: Optional configfile - defaults to assets.configfile
+        Position 0: Optional configfile
+                    [default: assets.configfile]
 
 
     Kwargs:
 
-        populate_global    (bool): Specify whether or not the global CONFIG variable
-                                   should be set to output dictionary
+        populate_global     (bool): Specify whether or not the global CONFIG variable
+                                    should be set to output dictionary.
+
+        append              (bool): If populating the global variable, specifies whether
+                                    or not the loaded values should be appended.
 
 
     Returns:
@@ -183,11 +242,6 @@ def load_configfile(populate_global=True, *args):
 
     global CONFIG
 
-    if len(args) > 0:
-        configfile = args[0]
-    else:
-        configfile = assets.configfile
-
     loaded = ConfigParser()
     result = loaded.read(configfile)
     if not result:
@@ -195,10 +249,13 @@ def load_configfile(populate_global=True, *args):
 
     output = {}
     for section in loaded.sections():
-        output[section] = {k: v for k, v in loaded.items(section)}
+        output[section] = {k: string2type(v) for k, v in loaded.items(section)}
 
     if populate_global:
-        CONFIG = output.copy()
+        if append:
+            CONFIG = dict(output.copy().items() + CONFIG.items())
+        else:
+            CONFIG = output.copy()
 
     return output.copy()
 
