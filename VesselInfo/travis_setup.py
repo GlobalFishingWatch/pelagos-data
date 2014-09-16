@@ -36,6 +36,8 @@
 Setup script for VesselInfo
 """
 
+
+import json
 import os
 import sys
 
@@ -44,7 +46,71 @@ try:
 except ImportError:
     from ConfigParser import ConfigParser
 
-import vessel_info
+
+#/* ======================================================================= */#
+#/*     Define string2type() function
+#/* ======================================================================= */#
+
+def string2type(i_val):
+
+    """
+    Convert an input string to a Python type
+    """
+
+    # Force value to Python type
+    try:
+        return int(i_val)
+    except ValueError:
+        try:
+            return float(i_val)
+        except ValueError:
+            if i_val.lower() == 'true':
+                return True
+            elif i_val.lower() == 'false':
+                return False
+            elif i_val.lower() == 'none':
+                return None
+            else:
+                try:
+                    return json.loads(i_val)
+                except ValueError:
+                    return i_val
+
+
+#/* ======================================================================= */#
+#/*     Define config2ict() function
+#/* ======================================================================= */#
+
+def config2dict(cfg_parser_obj):
+
+    """
+    Convert an instance of ConfigParser to a dictionary
+    """
+
+    output = {}
+    for section in cfg_parser_obj.sections():
+        output[section] = {k: string2type(v) for k, v in cfg_parser_obj.items(section)}
+
+    return output.copy()
+
+
+#/* ======================================================================= */#
+#/*     Define dict2config() function
+#/* ======================================================================= */#
+
+def dict2config(config_dict):
+
+    """
+    Convert a dictionary to a ConfigParser object
+    """
+
+    config = ConfigParser()
+    for section in config_dict.keys():
+        config.add_section(section)
+        for k, v in config_dict[section].iteritems():
+            config.set(section, k, v)
+
+    return config
 
 
 #/* ======================================================================= */#
@@ -72,7 +138,9 @@ def main(args):
         print("ERROR: fleetmon_user or fleetmon_key could not be found - set an environment variable or set via the commandline")
         return 1
 
-    config_content = vessel_info.settings.load_configfile(configfile=configfile, populate_global=False)
+    load_config = ConfigParser()
+    load_config.read(configfile)
+    config_content = config2dict(load_config)
 
     # Set up FleetMON by populating API user and key
     if config_content['FleetMON']['user'] is None:
@@ -81,7 +149,9 @@ def main(args):
         config_content['FleetMON']['key'] = fleetmon_key
 
     # Write the configfile back out
-    vessel_info.settings.write_configfile(config_content, configfile=configfile)
+    write_config = dict2config(config_content)
+    with open(configfile, 'w') as f:
+        write_config.write(f)
 
     # Cleanup
     print("Done")
