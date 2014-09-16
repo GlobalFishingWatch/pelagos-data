@@ -3,15 +3,21 @@ VesselInfo
 
 Tools for compiling marine vessel information
 
+[![Build Status](https://travis-ci.org/SkyTruth/pelagos-data.svg?branch=vesselinfo)](https://travis-ci.org/SkyTruth/pelagos-data)
+
 
 Installing
 ==========
 
         $ git clone https://github.com/SkyTruth/pelagos-data
         $ cd pelagos-data/VesselInfo
+        
+Open the `Config.cfg` file and populate the `user` and `key` values with information from FleetMON.
+        
         $ pip install -r requirements.txt
         $ ./run_tests.py
         $ pip install . --upgrade
+
 
 Commandline Utilities
 =====================
