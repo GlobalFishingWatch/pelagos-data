@@ -49,6 +49,9 @@ from bs4 import BeautifulSoup
 #/*     Define global variables
 #/* ======================================================================= */#
 
+# TODO: Come up with a global list of output fields and ONLY add to that.  Scrapers should all return the same dict, just with some populated fields
+# TODO: Determine date format
+
 DEFAULT_RETRY = 3
 DEFAULT_PAUSE = 1
 DEFAULT_PAUSE_MIN = 0
@@ -58,6 +61,7 @@ USER_AGENTS = ['Mozilla/30.0']
 DEFAULT_USER_AGENT = 'Mozilla/30.0'
 DEFAULT_SCRAPER_OFIELDS = ['name', 'class', 'callsign', 'imo', 'flag', 'system', 'mmsi', 'source']
 DEFAULT_OUTPUT_TEMPLATE = {i: None for i in DEFAULT_SCRAPER_OFIELDS}
+DEFAULT_HEADERS = {'User-agent': USER_AGENTS[0]}
 
 
 #/* ======================================================================= */#
@@ -747,20 +751,34 @@ def gp_blacklist_vessel(url, get_scraper_options=False, get_output_fields=False,
 
     Kwargs:
 
+        get_scraper_options (bool): If True, return a dictionary containing
+                                    scraper options as keys and a plain text
+                                    description of what the option does.  The
+                                    URL parameter must be set to None for this
+                                    option to work properly.
+
+        get_output_fields (bool):   If True, return a list of keys present in
+                                    the output dictionary.  Useful for
+                                    initializing a csv.DictWriter
+
         headers         (dict): Header to use for HTTP request
                                 [default: {'User-agent': self.user_agent}]
+
         timeout         (int): Number of seconds to wait before assuming the
                                HTTP request is a failure
                                [default: 30]
+
         null            (anything): Value to use when no value could be scraped
                                     [default: None]
+
         scraper_name    (anything): Name of this scraper
                                     [default: GreenpeaceBlacklist]
+
 
     Field Map:
 
         Website                     Output Dict
-
+        -------                     -----------
         Blacklisted In              blacklisted_in
         IRCS                        callsign
         Vessel Type                 class
@@ -779,8 +797,8 @@ def gp_blacklist_vessel(url, get_scraper_options=False, get_output_fields=False,
         Previous Names              previous_names
         Vessel Length               vessel_length
         date                        Some fields contain the date updated
-                                    so if the date is present in at least
-                                    one field, the first occurrence is returned
+                                      so if the date is present in at least
+                                      one field, the first occurrence is returned
         url                         Input URL
         source                      Name of scraper
         system                      AIS vs. VMS vs. etc. - Currently null for
@@ -933,7 +951,7 @@ def gp_blacklist_vessel(url, get_scraper_options=False, get_output_fields=False,
 def gp_blacklist(get_scraper_options=False, get_output_fields=False, **kwargs):
 
     """
-    Given a URL to a blacklisted Greenpeace vessel collect available information
+    Scrape the entire Greenpeace Blacklist and collect all available information
 
 
     Args:
@@ -942,6 +960,14 @@ def gp_blacklist(get_scraper_options=False, get_output_fields=False, **kwargs):
 
 
     Kwargs:
+
+        get_scraper_options (bool): If True, return a dictionary containing
+                                    scraper options as keys and a plain text
+                                    description of what the option does
+
+        get_output_fields (bool):   If True, return a list of keys present in
+                                    the output dictionary.  Useful for
+                                    initializing a csv.DictWriter
 
         headers         (dict): Header to use for HTTP request
                                 [default: {'User-agent': self.user_agent}]
@@ -960,7 +986,7 @@ def gp_blacklist(get_scraper_options=False, get_output_fields=False, **kwargs):
     Field Map:
 
         Website                     Output Dict
-
+        -------                     -----------
         Blacklisted In              blacklisted_in
         IRCS                        callsign
         Vessel Type                 class
@@ -1065,4 +1091,299 @@ def gp_blacklist(get_scraper_options=False, get_output_fields=False, **kwargs):
     if return_urls:
         return links
     else:
-        return [gp_blacklist_vessel(url) for url in links]
+        return [gp_blacklist_vessel(url, **kwargs) for url in links]
+
+
+#/* ======================================================================= */#
+#/*     Define iuu_vessel() function
+#/* ======================================================================= */#
+
+def iuu_vessel(url, get_output_fields=False, get_scraper_options=False, **kwargs):
+
+    """
+    Given a URL to a IUU vessel information page, collect available information
+
+    Args:
+
+        url     (str): URL to a vessel's page
+
+
+    Kwargs:
+
+        get_scraper_options (bool): If True, return a dictionary containing
+                                    scraper options as keys and a plain text
+                                    description of what the option does.  The
+                                    URL parameter must be set to None for this
+                                    option to work properly.
+
+        get_output_fields (bool):   If True, return a list of keys present in
+                                    the output dictionary.  Useful for
+                                    initializing a csv.DictWriter
+
+        headers         (dict): Header to use for HTTP request
+                                [default: {'User-agent': self.user_agent}]
+
+        timeout         (int): Number of seconds to wait before assuming the
+                               HTTP request is a failure
+                               [default: 30]
+
+        null            (anything): Value to use when no value could be scraped
+                                    [default: None]
+
+        scraper_name    (anything): Name of this scraper
+                                    [default: IUU_Vessel_List]
+
+
+        Field Map:
+
+            Website                     Output Dict
+            -------                     -----------
+            RFMO Vessel Name            name
+            IMO Number                  imo
+            Gross Tonnage               gross_tonnage
+            Length                      length
+            MMSI No.                    mmsi
+            Year of Build               year_built
+            Current Owner               owner_company
+            Status                      status
+            Vessel Type                 class
+            Current Flag                flag
+            Deadweight                  dead_weight
+            Depth                       draft
+            IRCS                        callsign
+            Shipyard                    shipyard_built
+            Operator                    operator
+            Status Date                 date
+
+
+        Sample Output:
+            {
+                'callsign': u'4LPN',
+                'class': u'Fish Carrier',
+                'date': u'2008/03/02',
+                'dead_weight': u'518 tonnes',
+                'draft': u'5.19 metres',
+                'flag': u'Georgia',
+                'gross_tonnage': u'699.00 tonnes',
+                'imo': u'7436533',
+                'length': u'55.02 metres',
+                'mmsi': None,
+                'name': u'Alfa',
+                'operator': u'Fishery Group JSC',
+                'owner_company': u'Stratford Vale Corp',
+                'shipyard_built': u'Khabarovskiy Sudostroitelnyy Zavod im Kirova - Khabarovsk Yard/hull No.: 807',
+                'source': u'IUU_Vessel_List',
+                'status': u'Total Loss',
+                'system': None,
+                'url': 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=6',
+                'year_built': u'1974'
+            }
+        """
+
+    global DEFAULT_TIMEOUT
+    global DEFAULT_HEADERS
+    global DEFAULT_SCRAPER_OFIELDS
+
+    # Parse single argument needed for the next step
+    null = kwargs.get('null', None)
+
+    # Needed for documentation, setting up CSV writers, etc.
+    output = {i: null for i in DEFAULT_SCRAPER_OFIELDS + [
+        'gross_tonnage', 'year_built', 'owner_company', 'status', 'dead_weight', 'shipyard_built', 'operator', 'date'
+    ]}
+    if get_scraper_options:
+        return iuu_vessel_list(get_scraper_options=True)
+    if get_output_fields:
+        return output.keys()
+
+    # Parse arguments
+    headers = kwargs.get('headers', {'User-agent': DEFAULT_USER_AGENT})
+    timeout = kwargs.get('timeout', DEFAULT_TIMEOUT)
+    scraper_name = kwargs.get('scraper_name', 'IUU_Vessel_List')
+
+    # Make request, check for errors and load into BeautifulSoup
+    response = requests.get(url, timeout=timeout, headers=headers)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text)
+    response.close()
+
+    # Extract information
+    output['url'] = url
+    output['source'] = scraper_name
+    table = soup.find_all('table')[0]  # The first table contains everything of interest
+    values = {}
+    for tr in table.find_all('tr'):
+
+        th = tr.find_all('th')
+        td = tr.find_all('td')
+        for k, v in zip(th, td):
+            k = k.text
+            v = v.text
+            if k is not None:
+                k = k.strip()
+                try:
+                    v = v.strip()
+                except TypeError:
+                    v = null
+                values[k] = v
+
+    for txt, val in values.iteritems():
+
+        if txt is not None:
+
+            if txt == 'RFMO Vessel Name':
+                output['name'] = val
+            elif txt == 'IMO Number':
+                output['imo'] = val
+            elif txt == 'Gross Tonnage':
+                output['gross_tonnage'] = val
+            elif txt == 'Length':
+                output['length'] = val
+            elif txt == 'MMSI No.':
+                output['mmsi'] = val
+            elif txt == 'Year of Build':
+                output['year_built'] = val
+            elif txt == 'Current Owner':
+                output['owner_company'] = val
+            elif txt == 'Status':
+                output['status'] = val
+            elif txt == 'Vessel Type':
+                output['class'] = val
+            elif txt == 'Current Flag':
+                output['flag'] = val
+            elif txt == 'Deadweight':
+                output['dead_weight'] = val
+            elif txt == 'Depth':
+                output['draft'] = val
+            elif txt == 'IRCS':
+                output['callsign'] = val
+            elif txt == 'Shipyard':
+                output['shipyard_built'] = val
+            elif txt == 'Operator':
+                output['operator'] = val
+            elif txt == 'Status Date':
+                output['date'] = val
+
+    # Make empty strings null
+    for k, v in output.copy().iteritems():
+        if not v:
+            v = null
+        output[k] = v
+
+    soup = None
+    response.close()
+    return output.copy()
+
+
+#/* ======================================================================= */#
+#/*     Define iuu_vessel_list() function
+#/* ======================================================================= */#
+
+def iuu_vessel_list(get_scraper_options=False, get_output_fields=False, **kwargs):
+
+    """
+    Scrape the entire IUU vessel list and collect all available information
+
+
+    Args:
+
+        url     (str): URL to a blacklisted vessel's page
+
+
+    Kwargs:
+
+        get_scraper_options (bool): If True, return a dictionary containing
+                                    scraper options as keys and a plain text
+                                    description of what the option does
+
+        get_output_fields (bool):   If True, return a list of keys present in
+                                    the output dictionary.  Useful for
+                                    initializing a csv.DictWriter
+
+        headers         (dict): Header to use for HTTP request
+                                [default: {'User-agent': self.user_agent}]
+
+        timeout         (int): Number of seconds to wait before assuming the
+                               HTTP request is a failure
+                               [default: 30]
+
+        null            (anything): Value to use when no value could be scraped
+                                    [default: None]
+
+        scraper_name    (anything): Name of this scraper
+                                    [default: GreenpeaceBlacklist]
+
+
+    Field Map:
+
+        See iuu_vessel()
+
+
+    Sample Output:
+
+        A list where each element is output from iuu_vessel()
+
+        [
+
+
+             {
+                'callsign': u'4LPN',
+                'class': u'Fish Carrier',
+                'date': u'2008/03/02',
+                'dead_weight': u'518 tonnes',
+                'draft': u'5.19 metres',
+                'flag': u'Georgia',
+                ...
+            },
+            ...
+        ]
+
+
+        With return_urls=True
+
+            [
+                'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=6',
+                'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=7',
+                'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=8',
+            ]
+
+    """
+
+    global DEFAULT_TIMEOUT
+    global DEFAULT_HEADERS
+
+    # Needed for documentation, setting up output CSV's, etc.
+    _scraper_options = {
+        'vessel_list_url': "(str): URL to website containing a list of all vessels",
+        'timeout': "(int): Number of seconds to wait until a scrape request is considered a failure",
+        'headers': "(dict): Header parameter for each scrape request",
+        'base_vessel_url': "(str): Base URL to which the vessel path is appended",
+        'return_links': "(bool): Return a list of all vessel URL's instead of scraping them"
+    }
+    if get_output_fields:
+        return iuu_vessel(None, get_output_fields=True)
+
+    if get_scraper_options:
+        return _scraper_options
+
+    # Parse arguments
+    vessel_list_url = kwargs.get('vessel_list_url', 'http://iuu-vessels.org/iuu/php/showvessellist.php?searchTerm=&ccamlr=true&seafo=true&nafo=true&iccat=true&neafc=true&iattc=true&iotc=true&wcpfc=true&live=true&delist=true&column=vessel_name&dir=asc&group=3')
+    base_vessel_url = kwargs.get('vessel_info_base_url', 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=')
+    timeout = kwargs.get('timeout', DEFAULT_TIMEOUT)
+    headers = kwargs.get('headers', DEFAULT_HEADERS)
+    return_links = kwargs.get('return_links', False)
+
+    # Make request and check for errors
+    response = requests.get(vessel_list_url, timeout=timeout, headers=headers)
+    response.raise_for_status()
+
+    # Parse soup
+    soup = BeautifulSoup(response.text)
+    links = [base_vessel_url + tag['href'].split('=')[1] for tag in soup.find_all('a', href=True) if tag.text.lower() == 'details']
+
+    soup = None
+    response.close()
+    if return_links:
+        return links
+    else:
+        return [iuu_vessel(url, **kwargs) for url in links]
