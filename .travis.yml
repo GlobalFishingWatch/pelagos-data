@@ -34,8 +34,10 @@ language: python
 python:
   - "2.7"
 
+before_install:
+  - "./VesselInfo/travis_setup.py configfile=VesselInfo/Config.cfg"
+
 install:
-  - "./VesselInfo/travis_setup.py"
   - "pip install -r VesselInfo/requirements.txt"
 
 script: ./VesselInfo/run_tests.py VesselInfo/vessel_info
