@@ -36,3 +36,15 @@ bq load --source_format=NEWLINE_DELIMITED_JSON \
     Scratch.atw2_20k_region_dev2 gs://analyze-data/processed/atw2_20k-region-dev2.json.gz \
     /usr/local/src/pelagos-data/schema/scored-ais-processed-schema-1.4.json
 
+cat > my-new-tileset-name.json <<EOF
+{
+  "name": "Global-20k-2012",
+  "workspace_template": "pelagos-2012-template.json",
+  "params": {
+    "table": "Global_20k_2012.processed_1_4_1"
+  },
+  "generator": "bqtile.TileGenerator"
+}
+EOF
+
+gsutil cp -a public-read my-new-tileset-name.json gs://skytruth-pelagos-redhog/tilesets
