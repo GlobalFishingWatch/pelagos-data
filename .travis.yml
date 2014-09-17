@@ -1,5 +1,5 @@
-# This document is part of the pelagos project
-# https://github.com/skytruth/pelagos
+# This document is part of pelagos-data
+# https://github.com/skytruth/pelagos-data
 
 
 # =========================================================================== #
@@ -29,30 +29,18 @@
 # =========================================================================== #
 
 
-"""
-Sample and test datasets
-"""
+language: python
 
+python:
+  - "2.7"
 
-from os.path import abspath, dirname
-from os import sep
+before_install:
+  - "./VesselInfo/travis_setup.py configfile=VesselInfo/Config.cfg"
 
+install:
+  - "pip install -r VesselInfo/requirements.txt"
 
-#/* ======================================================================= */#
-#/*     Provide easy access to specific test datasets
-#/* ======================================================================= */#
+script: ./VesselInfo/run_tests.py VesselInfo/vessel_info
 
-_data_dir = abspath(dirname(__file__))
-
-sample_mmsi = _data_dir + sep + '10_mmsi.csv'
-unclassified_mmsi_20k = _data_dir + sep + 'data' + 'unclassified_mmsi_20k.csv'
-
-marine_traffic_20k = _data_dir + sep + 'data' + 'MarineTraffic_20k.csv'
-vessel_finder_20k = _data_dir + sep + 'data' + 'VesselFinder_20k.csv'
-fleetmon_20k = _data_dir + sep + 'data' + 'FleetMON_20k.csv'
-
-test_common_TestMain_test_standard_input1 = _data_dir + sep + 'test_common_TestMain_test_standard_input2.csv'
-test_common_TestMain_test_standard_input2 = _data_dir + sep + 'test_common_TestMain_test_standard_input1.csv'
-test_common_TestMain_test_standard_expected_output = _data_dir + sep + 'test_common_TestMain_test_standard_expected_output.csv'
-
-configfile = _data_dir + sep + 'Config.cfg'
+notifications:
+  flowdock: d155ceb5c276d1065a2e6be5b057da84

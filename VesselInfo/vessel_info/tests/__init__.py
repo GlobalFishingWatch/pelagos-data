@@ -38,8 +38,9 @@ from os.path import dirname
 import sys
 import unittest
 
-import testdata
-import test_scrape
+from . import testdata
+from . import test_scrape
+from . import test_settings
 
 
 #/* ======================================================================= */#

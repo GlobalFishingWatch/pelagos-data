@@ -34,7 +34,9 @@ VesselInfo - A global marine vessel database
 """
 
 
-import scrape
+from . import assets
+from . import scrape
+from . import settings
 from settings import __version__, __release__, __author__, __license__, __author_email__, __source__
-import utils
-import tests
+from . import utils
+from . import tests

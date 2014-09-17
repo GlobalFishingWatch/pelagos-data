@@ -1,3 +1,4 @@
 include README.md
 include LICENSE.txt
-recursive-include vessel_info/tests/testdata *.csv
+recursive-include vessel_info/assets *
+recursive-include vessel_info/tests/testdata *

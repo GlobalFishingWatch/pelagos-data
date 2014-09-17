@@ -39,10 +39,12 @@ Unittests for vessel_info.scrape
 
 from __future__ import unicode_literals
 
+from pprint import pprint
 import requests.exceptions
 import sys
 import unittest
 
+from vessel_info import settings
 from vessel_info import scrape
 
 
@@ -50,8 +52,8 @@ from vessel_info import scrape
 #/*     Define global variables
 #/* ======================================================================= */#
 
-FLEETMON_API_USER = 'skytruth_kevin'
-FLEETMON_API_KEY = 'a0e7b74fc6bbd9c44c8359e20b01f903b3d6deaa'
+FLEETMON_API_USER = settings.CONFIG['FleetMON']['user']
+FLEETMON_API_KEY = settings.CONFIG['FleetMON']['key']
 
 
 #/* ======================================================================= */#
@@ -140,10 +142,10 @@ class TestMMSI(unittest.TestCase):
         self.assertRaises(requests.exceptions.HTTPError, scrape_mmsi.vessel_finder)
 
     #/* ----------------------------------------------------------------------- */#
-    #/*     Define test_fleet_mon() method
+    #/*     Define test_fleetmon() method
     #/* ----------------------------------------------------------------------- */#
 
-    def test_fleet_mon(self):
+    def test_fleetmon(self):
 
         global FLEETMON_API_USER
         global FLEETMON_API_KEY
@@ -460,6 +462,173 @@ class TestGPBlacklist(unittest.TestCase):
 
         actual = scrape.gp_blacklist()
         for vessel in actual:
+            if vessel['url'] in expected:
+                self.assertDictEqual(expected[vessel['url']], vessel)
+
+
+#/* ======================================================================= */#
+#/*     Define TestIUUVessel() class
+#/* ======================================================================= */#
+
+class TestIUUVessel(unittest.TestCase):
+    pass
+
+
+#/* ======================================================================= */#
+#/*     Define TestIUUVesselList() class
+#/* ======================================================================= */#
+
+class TestIUUVesselList(unittest.TestCase):
+
+    def test_get_scraper_options(self):
+        self.assertIsInstance(scrape.iuu_vessel_list(get_scraper_options=True), dict)
+
+    def test_get_output_fields(self):
+        self.assertIsInstance(scrape.iuu_vessel_list(get_output_fields=True), list)
+
+    def test_return_urls(self):
+        base_url = 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid='
+        must_include = [base_url + str(i) for i in range(25, 100)]
+        result = scrape.iuu_vessel_list(return_urls=True)
+        self.assertIsInstance(result, list)
+        for url in must_include:
+            self.assertTrue(url in result)
+
+    def test_return_results(self):
+
+        expected = {
+            'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=81': {
+                'callsign': 'HP8357',
+                'class': 'Fishing Vessel',
+                'date': None,
+                'dead_weight': None,
+                'draft': '3.80 metres',
+                'flag': 'Deflagged',
+                'gross_tonnage': '859.00 tonnes',
+                'imo': '8882818',
+                'length': '54.85 metres',
+                'mmsi': None,
+                'name': 'Maya V',
+                'operator': 'Rainbow Fisheries Ltd',
+                'owner_company': 'Rainbow Fisheries',
+                'shipyard_built': 'Fong Kuo Shipbuilding Co., Ltd.',
+                'source': 'IUU_Vessel_List',
+                'status': 'In Service/Commission',
+                'system': None,
+                'url': 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=81',
+                'year_built': '1988'
+            },
+            'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=82': {
+                'callsign': 'DTAR8',
+                'class': 'Fishing Vessel',
+                'date': None,
+                'dead_weight': '385 tonnes',
+                'draft': '3.57 metres',
+                'flag': 'South Korea',
+                'gross_tonnage': '387.00 tonnes',
+                'imo': '7920182',
+                'length': '50.15 metres',
+                'mmsi': None,
+                'name': 'Melilla No. 101',
+                'operator': 'Dongwon Industries Co Ltd',
+                'owner_company': 'Dong Won Fisheries Co Ltd',
+                'shipyard_built': 'Miho Zosensho K.K. - Shimizu Yard/hull No.: 1146',
+                'source': 'IUU_Vessel_List',
+                'status': 'In Service/Commission',
+                'system': None,
+                'url': 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=82',
+                'year_built': '1980'
+            },
+            'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=83': {
+                'callsign': 'DTAQ8',
+                'class': 'Fishing Vessel',
+                'date': None,
+                'dead_weight': '425 tonnes',
+                'draft': '3.75 metres',
+                'flag': 'South Korea',
+                'gross_tonnage': '422.00 tonnes',
+                'imo': '7809986',
+                'length': '52.75 metres',
+                'mmsi': None,
+                'name': 'Melilla No. 103',
+                'operator': 'Dong Won Fisheries Co Ltd',
+                'owner_company': 'Dong Won Fisheries Co Ltd',
+                'shipyard_built': 'Niigata Engineering Co Ltd - Niigata Yard/hull No.: 1607',
+                'source': 'IUU_Vessel_List',
+                'status': 'In Service/Commission',
+                'system': None,
+                'url': 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=83',
+                'year_built': '1978'
+            },
+            'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=84': {
+                'callsign': 'V3KU',
+                'class': 'Longline',
+                'date': None,
+                'dead_weight': None,
+                'draft': None,
+                'flag': 'Indonesia',
+                'gross_tonnage': None,
+                'imo': 'not available',
+                'length': None,
+                'mmsi': None,
+                'name': 'Mutiara 28',
+                'operator': None,
+                'owner_company': None,
+                'shipyard_built': None,
+                'source': 'IUU_Vessel_List',
+                'status': None,
+                'system': None,
+                'url': 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=84',
+                'year_built': None
+            },
+            'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=85': {
+                'callsign': 'UESA',
+                'class': 'Fishing Vessel',
+                'date': None,
+                'dead_weight': '494 tonnes',
+                'draft': '7.50 metres',
+                'flag': 'Russia',
+                'gross_tonnage': '1146.00 tonnes',
+                'imo': '9146352',
+                'length': '49.99 metres',
+                'mmsi': None,
+                'name': 'Muravyev Amurskiy',
+                'operator': u"OOO \\'Tymlatskiy Rybokombinat\\'",
+                'owner_company': 'Tymlatskiy Rymbokombinat',
+                'shipyard_built': 'Polnocna Sa, Stocznia',
+                'source': 'IUU_Vessel_List',
+                'status': 'In Service/Commission',
+                'system': None,
+                'url': 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=85',
+                'year_built': None
+            },
+            'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=86': {
+                'callsign': None,
+                'class': 'Stern Trawler',
+                'date': None,
+                'dead_weight': '593 tonnes',
+                'draft': '7.07 metres',
+                'flag': 'Deregistered from Togo',
+                'gross_tonnage': '1066.00 tonnes',
+                'imo': '7385174',
+                'length': '61.42 metres',
+                'mmsi': None,
+                'name': 'Murtosa',
+                'operator': 'Murtosa Fishing, 44, John Street, Stanley, FIQQ 1ZZ, Falkland Islands.',
+                'owner_company': 'Murtosa Fishing Co',
+                'shipyard_built': 'Estaleiros Navais de Viana do Castelo, Portugal',
+                'source': 'IUU_Vessel_List',
+                'status': 'In Service/Commission',
+                'system': None,
+                'url': 'http://iuu-vessels.org/iuu/php/showvesseldetails.php?uid=86',
+                'year_built': '1976'
+            }
+        }
+
+        actual = scrape.iuu_vessel_list()
+        self.assertIsInstance(actual, list)
+        for vessel in actual:
+            self.assertIsInstance(vessel, dict)
             if vessel['url'] in expected:
                 self.assertDictEqual(expected[vessel['url']], vessel)
 

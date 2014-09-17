@@ -36,7 +36,7 @@ Common components for all commandline utilities
 
 import json
 from os import linesep
-from .. import settings
+from ..settings import *
 import sys
 
 
@@ -95,7 +95,7 @@ def print_license():
     :rtype: int
     """
 
-    print(settings.__license__)
+    print(__license__)
 
     return 1
 
@@ -113,7 +113,7 @@ def print_short_version():
     :rtype: int
     """
 
-    print(settings.__version__)
+    print(__version__)
 
     return 1
 
@@ -133,7 +133,7 @@ def print_version():
 
     print("""
 %s v%s released %s
-    """ % (settings.__module_name__, settings.__version__, settings.__release__))
+    """ % (__module_name__, __version__, __release__))
 
     return 1
 

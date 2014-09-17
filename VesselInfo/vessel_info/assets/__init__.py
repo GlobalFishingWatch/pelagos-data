@@ -1,5 +1,5 @@
-# This document is part of the pelagos project
-# https://github.com/skytruth/pelagos
+# This document is part of pelagos-data
+# https://github.com/skytruth/pelagos-data
 
 
 # =========================================================================== #
@@ -30,29 +30,17 @@
 
 
 """
-Sample and test datasets
+Actual files needed by VesselInfo
 """
 
 
-from os.path import abspath, dirname
+import inspect
 from os import sep
+from os.path import dirname
 
 
 #/* ======================================================================= */#
-#/*     Provide easy access to specific test datasets
+#/*     Reference asset files
 #/* ======================================================================= */#
 
-_data_dir = abspath(dirname(__file__))
-
-sample_mmsi = _data_dir + sep + '10_mmsi.csv'
-unclassified_mmsi_20k = _data_dir + sep + 'data' + 'unclassified_mmsi_20k.csv'
-
-marine_traffic_20k = _data_dir + sep + 'data' + 'MarineTraffic_20k.csv'
-vessel_finder_20k = _data_dir + sep + 'data' + 'VesselFinder_20k.csv'
-fleetmon_20k = _data_dir + sep + 'data' + 'FleetMON_20k.csv'
-
-test_common_TestMain_test_standard_input1 = _data_dir + sep + 'test_common_TestMain_test_standard_input2.csv'
-test_common_TestMain_test_standard_input2 = _data_dir + sep + 'test_common_TestMain_test_standard_input1.csv'
-test_common_TestMain_test_standard_expected_output = _data_dir + sep + 'test_common_TestMain_test_standard_expected_output.csv'
-
-configfile = _data_dir + sep + 'Config.cfg'
+configfile = dirname(inspect.getfile(inspect.currentframe())) + sep + 'config.cfg'
