@@ -12,12 +12,13 @@ sudo gcloud components update -q
 sudo gcloud components update gae-python -q
 sudo gcloud components update app -q
 
-sudo pip install virtualenv
+sudo pip install pip --upgrade
 
 cd /usr/local/src/pelagos-data
 sudo git pull
 sudo pip install -r requirements.txt
+# sudo pip install . --upgrade
 
-
+cd ~/
 
 

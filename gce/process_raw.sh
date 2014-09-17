@@ -19,7 +19,7 @@ bq load --skip_leading_rows=1 --max_bad_records=100 \
 cd /usr/local/src/pelagos-data/
 gunzip -c ./data/sample_ais/processed_1_3_10k_points.csv.gz | \
     ./utils/regionate.py ./data/regions/regions.sqlite | \
-    gzip -c > ~/regionated_1_3_10k_points.jsin.gz
+    gzip -c > ~/regionated_1_3_10k_points.json.gz
 
 # Regionate
 gunzip -c atw2_20k-processed.csv.gz |
