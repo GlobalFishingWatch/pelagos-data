@@ -22,24 +22,24 @@ import sys
 
 from vectortile import TileBounds
 
-MAX_ZOOM = 15
 
+MAX_ZOOM = 15
 MIN_SCORE = -15.0
 MAX_SCORE = 5.0
-
-MAX_INTERVAL = 24*60*60  # 24 hours
-
+MAX_INTERVAL = 24 * 60 * 60  # 24 hours
 TYPE_NORMAL = 0
 TYPE_SEGMENT_START = 1
 TYPE_SEGMENT_END = 2
 
-class Transform (object):
+
+class Transform(object):
+
     def __init__(self):
         self.prev_row = None
         self.stats = {}
 
-    def get_regions (self, latitude, longitude):
-        return []
+    # def get_regions(self, latitude, longitude):
+    #     return []
 
     def _increment_stat(self, stat):
         if stat in self.stats:
@@ -74,13 +74,18 @@ class Transform (object):
         # add a TileBounds gridcode
         row['gridcode'] = str(TileBounds.from_point(lon=lon, lat=lat, zoom_level=MAX_ZOOM))
 
-        # normalize score in range 0.0 - 1.0
-        row['score'] = round(((score - MIN_SCORE) / (MAX_SCORE - MIN_SCORE)),6)
-        row['longitude'] = round(lon,6)
-        row['latitude'] = round(lat,6)
+        # Normalize score
+        # row['score'] = round(((score - MIN_SCORE) / (MAX_SCORE - MIN_SCORE)), 6)
+        if score < 0:
+            row['score'] = 0
+        elif 0 <= score < 1:
+            row['score'] = round(((score - 0) / (0 - 0.6)))
+        elif 1 <= score <= 5:
+            row['score'] = round(((score - 1) / (1 - 5)))
 
+        row['longitude'] = round(lon, 6)
+        row['latitude'] = round(lat, 6)
         row['timestamp'] = int(row['timestamp'])
-
         row['interval'] = 0
         row['type'] = TYPE_SEGMENT_START
         row['next_gridcode'] = None
@@ -88,7 +93,7 @@ class Transform (object):
             if self.prev_row['mmsi'] == row['mmsi']:
                 self.prev_row['next_gridcode'] = row['gridcode']
                 interval = row['timestamp'] - self.prev_row['timestamp']
-                assert interval >= 0, 'imput data must be sorted by mmsi, by timestamp'
+                assert interval >= 0, 'input data must be sorted by mmsi, by timestamp'
                 if interval <= MAX_INTERVAL:
                     row['type'] = TYPE_NORMAL
                     self.prev_row['interval'] += interval / 2
@@ -120,7 +125,6 @@ class Transform (object):
             writer.writerow(self.prev_row)
 
 
-
 def main():
     arguments = docopt(__doc__, version='Pelagos AIS Transform 1.3')
 
@@ -139,7 +143,7 @@ def main():
 
     with sys.stdin if infile_name is None or '-' == infile_name else open(infile_name, 'rb') as csv_in:
         with sys.stdout if outfile_name is None or '-' == outfile_name else open(outfile_name, 'w') as csv_out:
-            transform = Transform ()
+            transform = Transform()
             transform.transform_file(csv_in, csv_out)
             logging.info(transform.stats)
 
@@ -148,4 +152,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
