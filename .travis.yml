@@ -34,13 +34,11 @@ language: python
 python:
   - "2.7"
 
-before_install:
-  - "./VesselInfo/travis_setup.py configfile=VesselInfo/Config.cfg"
-
 install:
-  - "pip install -r VesselInfo/requirements.txt"
+  - "pip install -r requirements.txt"
+  - "pip install ."
 
-script: ./VesselInfo/run_tests.py VesselInfo/vessel_info
+script: "nosetests"
 
 notifications:
   flowdock: d155ceb5c276d1065a2e6be5b057da84
