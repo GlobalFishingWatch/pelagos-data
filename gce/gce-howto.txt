@@ -1,4 +1,8 @@
 
+# Before running gcutil connect it to the pelagos-dev project
+gcloud auth login
+
+
 ### Setup new CGE Instance with local startup script
 gcutil addinstance pelagos-dev1 \
    --machine_type=n1-standard-1 \
