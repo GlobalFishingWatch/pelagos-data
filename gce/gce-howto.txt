@@ -4,7 +4,7 @@ gcloud auth login
 
 
 ### Setup new CGE Instance with local startup script
-gcutil addinstance pelagos-dev1 \
+gcutil addinstance pelagos-dev-oceana \
    --machine_type=n1-standard-1 \
    --image=pelagosdata1 \
    --service_account_scope=https://www.googleapis.com/auth/devstorage.full_control,https://www.googleapis.com/auth/bigquery,https://www.googleapis.com/auth/appengine.admin \
