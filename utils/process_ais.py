@@ -72,16 +72,15 @@ class Transform(object):
             return None
 
         # add a TileBounds gridcode
-        row['gridcode'] = str(TileBounds.from_point(lon=lon, lat=lat, zoom_level=MAX_ZOOM))
+        row['gridcode'] = TileBounds.from_point(lon=lon, lat=lat, zoom_level=MAX_ZOOM).gridcode
 
         # Normalize score
-        # row['score'] = round(((score - MIN_SCORE) / (MAX_SCORE - MIN_SCORE)), 6)
-        if score < 0:
+        if score <= 0:
             row['score'] = 0
-        elif 0 <= score < 1:
-            row['score'] = round(((score - 0) / (0 - 0.6)))
+        elif 0 < score < 1:
+            row['score'] = round(score * 0.6, 6)
         elif 1 <= score <= 5:
-            row['score'] = round(((score - 1) / (1 - 5)))
+            row['score'] = round(((0.4 * (score - 1)) / 4) + 0.6, 6)
 
         row['longitude'] = round(lon, 6)
         row['latitude'] = round(lat, 6)
@@ -126,7 +125,7 @@ class Transform(object):
 
 
 def main():
-    arguments = docopt(__doc__, version='Pelagos AIS Transform 1.3')
+    arguments = docopt(__doc__, version='Pelagos AIS Transform 1.4')
 
     if arguments['--verbose']:
         log_level = logging.DEBUG

@@ -103,7 +103,7 @@ def print_usage():
 Usage:
     {0} [-of ogr_driver] [-lco option=value] [-dsco option=value]
     {1} [-gl layer_name|layer1,layer2,...] [-rl layer_name|layer1,layer2]
-    {1} --grid=grid_file.ext --region=region_file.ext -o output_file.ext
+    {1} -g grid_file.ext -r region_file.ext -o output_file.ext
 """.format(__docname__, " " * len(__docname__)))
     return 1
 
@@ -192,11 +192,6 @@ def print_version():
     return 1
 
 
-def process_layers(grid_layer, region_layer, coord_transform):
-
-    pass
-
-
 #/* ======================================================================= */#
 #/*     Define ring2poly() function
 #/* ======================================================================= */#
@@ -282,9 +277,9 @@ def main(args):
             arg = args[i]
 
             # Help arguments
-            if arg in ('--help-info', '-help-info', '--helpinfo', '-help-info'):
+            if arg in ('--help-info', '-help-info', '--helpinfo', '-help-info', '--h', '-h'):
                 return print_help_info()
-            elif arg in ('--help', '-help', '--h', '-h'):
+            elif arg in ('--help', '-help'):
                 return print_help()
             elif arg in ('--usage', '-usage'):
                 return print_usage()
@@ -294,39 +289,34 @@ def main(args):
                 return print_license()
 
             # Specify input files
-            elif '--grid=' in arg:
-                i += 1
-                grid_file = arg.split('=', 1)[1]
-            elif '-gl' in arg:
+            elif arg in ('-g', '-grid'):
+                i += 2
+                grid_file = abspath(normpath(expanduser(args[i - 1])))
+            elif arg in ('-gl', '-grid-layer'):
                 i += 2
                 grid_layer_name = args[i - 1]
-            elif '--region=' in arg:
-                i += 1
-                region_file = arg.split('=', 1)[1]
-            elif '-rl' in arg:
-                i += 1
+            elif arg in ('-r', '-region'):
+                i += 2
+                region_file = abspath(normpath(expanduser(args[i - 1])))
+            elif arg in ('-rl', '-region-layer'):
+                i += 2
                 region_layer_name = args[i - 1]
 
             # Output file
-            elif arg == '-o':
+            elif arg in ('-o', '-output'):
                 i += 2
-                output_file = args[i - 1]
+                output_file = abspath(normpath(expanduser(args[i - 1])))
 
             # OGR output options
-            elif arg == '-of':
+            elif arg in ('-of', '-output-format'):
                 i += 2
                 output_driver_name = args[i - 1]
-            elif arg == '-lco':
+            elif arg in ('-lco', '-lyr-creation-option'):
                 i += 2
                 output_lco.append(args[i - 1])
-            elif arg == '-dsco':
+            elif arg in ('-dsco', '-ds-creation-option'):
                 i += 2
                 output_dsco.append(args[i - 1])
-
-            # Additional options
-            elif '--algorithm=' in arg:
-                i += 1
-                processing_algorithm = args[i - 1].split('=', 1)[1]
 
             # Positional arguments and errors
             else:
@@ -465,14 +455,12 @@ def main(args):
             bail = True
             print("ERROR: Region layer '%s' is not a multi/polygon/25D" % region_layer.GetName())
 
-
     # Make sure all grid layers are polygon or multipolygon (or 25D variants)
     for grid_layer in all_grid_layers:
         if grid_layer.GetGeomType() not in (ogr.wkbPolygon, ogr.wkbPolygon25D,
                                            ogr.wkbMultiPolygon, ogr.wkbMultiPolygon25D):
             bail = True
             print("ERROR: Grid layer '%s' is not a multi/polygon/25D" % grid_layer.GetName())
-
 
     # Encountered an error - exit but close everything first
     if bail:
@@ -490,6 +478,7 @@ def main(args):
     #/*     Process data
     #/* ----------------------------------------------------------------------- */#
 
+    print("Output datasource: %s" % output_file)
     # Process every combination of region layer and grid layer
     region_layer_counter = 0
     grid_layer_counter = 0
@@ -517,13 +506,28 @@ def main(args):
             region_layer_fields = [i.GetName() for i in region_field_definitions]
             grid_layer_fields = [i.GetName() for i in grid_field_definitions]
 
+            # Cache SRS objects
+            grid_layer_srs = region_layer.GetSpatialRef()
+            region_layer_srs = region_layer.GetSpatialRef()
+
             # Check for duplicate fields
             bail = False
             for r_field in region_layer_fields:
                 if r_field in grid_layer_fields:
                     bail = True
                     print("ERROR: Duplicate field: %s" % r_field)
+
+
+            # TODO: Implement check for homogeneous SRS
+            # if grid_layer_srs.IsSameGeogCS(region_layer_srs) is 0 or grid_layer_srs.IsSameVertCS(region_layer_srs) is 0:
+            #     bail = True
+            #     print("ERROR: Non-matching CRS for region layer '%s' and grid layer '%s'"
+            #           % (region_layer.GetName(), grid_layer.GetName()))
+
             if bail:
+                grid_srs = None
+                grid_layer_srs = None
+                region_layer_srs = None
                 r_field = None
                 region_feature_def = None
                 grid_feature_def = None
@@ -550,10 +554,6 @@ def main(args):
             region_feature_def = None
             grid_feature_def = None
             field_def = None
-
-            # Cache SRS objects
-            grid_layer_srs = region_layer.GetSpatialRef()
-            region_layer_srs = region_layer.GetSpatialRef()
 
             # Create a coordinate transformation object if the region_layer and grid_layer are in a different SRS
             if grid_layer_srs.IsSame(region_layer_srs) is not 1:
@@ -773,64 +773,134 @@ def main(args):
                 region_feature = None
                 region_geom = None
 
-                # Stash all the found grid cells into an in memory layer
-                mem_driver = ogr.GetDriverByName('Memory')
-                mem_ds = mem_driver.CreateDataSource('mem_grids')
-                mem_layer = mem_ds.CreateLayer('mem_grids', grid_layer.GetSpatialRef(), grid_layer.GetGeomType())
-                for grid_feature in grid_layer:
-                    mem_layer.CreateFeature(grid_feature)
-                grid_layer.ResetReading()
+
+
+
+
+
+
+
+
+
+
+
+
 
                 # Loop through the region polygons, set a spatial filter
                 region_feature_counter = 0
                 num_region_features = len(region_layer)
                 fid_counter = -1
+                print("    Processing data ...")
                 for region_feature in region_layer:
 
                     # Update user
                     region_feature_counter += 1
-                    sys.stdout.write("\r\x1b[K" + "    %s/%s" % (region_feature_counter, num_region_features))
+                    sys.stdout.write("\r\x1b[K" + "        %s/%s" % (region_feature_counter, num_region_features))
                     sys.stdout.flush()
 
                     region_geom = region_feature.GetGeometryRef().Clone()
                     if coord_transform is not None:
                         region_geom.Transform(coord_transform)
-                    mem_layer.ResetReading()
-                    mem_layer.SetSpatialFilter(region_geom.ConvexHull())
+                    grid_layer.ResetReading()
+                    grid_layer.SetSpatialFilter(region_geom.ConvexHull())
 
                     # Stamp out all intersecting grids and add to output layer
-                    for m_grid_feature in mem_layer:
+                    for grid_feature in grid_layer:
 
-                        m_grid_geom = m_grid_feature.GetGeometryRef()
-                        intersecting_geom = m_grid_geom.Intersection(region_geom)
+                        grid_geom = grid_feature.GetGeometryRef()
+                        intersecting_geom = grid_geom.Intersection(region_geom)
                         output_geom = ogr.Geometry(ogr.wkbMultiPolygon)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                # # Stash all the found grid cells into an in memory layer
+                # mem_driver = ogr.GetDriverByName('Memory')
+                # mem_ds = mem_driver.CreateDataSource('mem_grids')
+                # mem_layer = mem_ds.CreateLayer('mem_grids', grid_layer.GetSpatialRef(), grid_layer.GetGeomType())
+                # print("")
+                # mi = 0
+                # for grid_feature in grid_layer:
+                #     mi += 1
+                #     print("Mem I: %s" % mi)
+                #     mem_layer.CreateFeature(grid_feature)
+                # grid_layer.ResetReading()
+                #
+                # # Loop through the region polygons, set a spatial filter
+                # region_feature_counter = 0
+                # num_region_features = len(region_layer)
+                # fid_counter = -1
+                # print("    Processing data ...")
+                # for region_feature in region_layer:
+                #
+                #     # Update user
+                #     region_feature_counter += 1
+                #     sys.stdout.write("\r\x1b[K" + "        %s/%s" % (region_feature_counter, num_region_features))
+                #     sys.stdout.flush()
+                #
+                #     region_geom = region_feature.GetGeometryRef().Clone()
+                #     if coord_transform is not None:
+                #         region_geom.Transform(coord_transform)
+                #     mem_layer.ResetReading()
+                #     mem_layer.SetSpatialFilter(region_geom.ConvexHull())
+                #
+                #     # Stamp out all intersecting grids and add to output layer
+                #     for m_grid_feature in mem_layer:
+                #
+                #         m_grid_geom = m_grid_feature.GetGeometryRef()
+                #         intersecting_geom = m_grid_geom.Intersection(region_geom)
+                #         output_geom = ogr.Geometry(ogr.wkbMultiPolygon)
 
                         # NOTE: This logic ONLY allows multi/polygons to pass through - although first IF statement might let others through
                         # Logic in the validate section still only allows polygons
 
-                        # Intersecting geometry contains a polygon and may be immediately added to the output
+                        # POLYGON - Add
                         if intersecting_geom.GetGeometryType() in (ogr.wkbPolygon, ogr.wkbPolygon25D):
                             output_geom.AddGeometry(intersecting_geom)
                             intersecting_geom = None
 
-                        # Intersecting geometry is a linearring that is actually a closed polygon
-                        # Convert to a polygon and add
+                        # LINEARRING - Actually a closed polygon - convert to polygon and add
                         elif intersecting_geom.GetGeometryType() is ogr.wkbLinearRing and is_ring_poly(intersecting_geom):
                             output_geom.AddGeometry(ring2poly(intersecting_geom))
                             intersecting_geom = None
 
-                        # Intersecting geometry is a multipolygon - split into and add individual polygons
+                        # MULTIPOLYGON - Split into and add individual polygons
                         elif intersecting_geom.GetGeometryType() in (ogr.wkbMultiPolygon, ogr.wkbMultiPolygon25D):
                             for add_poly in [intersecting_geom.GetGeometryRef(i) for i in range(intersecting_geom.GetGeometryCount())]:
                                 output_geom.AddGeometry(add_poly)
                             add_poly = None
                             intersecting_geom = None
 
-                        # Intersecting geometry contains only a single point and may be discarded
-                        elif intersecting_geom.GetGeometryCount() is 0 and intersecting_geom.GetPointCount() is 1:
+                        # POINT or MULTIPOINT - Discard
+                        elif intersecting_geom.GetGeometryType() in (ogr.wkbPoint, ogr.wkbPoint25D,
+                                                                     ogr.wkbMultiPoint, ogr.wkbMultiPoint25D):
                             intersecting_geom = None
 
-                        # Intersecting geometry contains a linestring or multilinestring and can be discarded
+                        # LINESTRING or MULTILINESTRING
                         elif intersecting_geom.GetGeometryType() in (ogr.wkbLineString, ogr.wkbLineString25D,
                                                                      ogr.wkbMultiLineString, ogr.wkbMultiLineString25D):
                             intersecting_geom = None
@@ -861,10 +931,10 @@ def main(args):
 
                         # Unrecognized geometry type
                         else:
-                            raise TypeError("Unhandled geometry type")
+                            print("")
                             print("")
                             print("ERROR: Unrecognized geometry")
-                            print("       Intersections can sometimes yield really strange geometry")
+                            print("       Intersections can sometimes yield strange geometry")
                             print("")
                             print("       Input file information:")
                             print("       Region FID: %s" % region_feature.GetFID())

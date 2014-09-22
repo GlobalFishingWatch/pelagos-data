@@ -34,6 +34,11 @@ Module-wide settings and options
 """
 
 
+from __future__ import unicode_literals
+
+import logging
+
+
 #/* ======================================================================= */#
 #/*     Build Information
 #/* ======================================================================= */#
@@ -67,3 +72,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
+
+#/* ======================================================================= */#
+#/*     Scores
+#/* ======================================================================= */#
+
+MIN_FISHING_SCORE = -15.0
+MAX_FISHING_SCORE = 5.0
+
+
+#/* ======================================================================= */#
+#/*     Default logging
+#/* ======================================================================= */#
+
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
