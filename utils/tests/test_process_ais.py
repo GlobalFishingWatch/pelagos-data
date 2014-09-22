@@ -14,9 +14,9 @@ class ModelTransformTest(unittest2.TestCase):
         return open(os.path.join(os.path.dirname(__file__), 'fixtures', filename), 'r')
 
     def test_transform_file(self):
-        csv_in = self._open_fixture('process_ais_input_v1_3.csv')
+        csv_in = self._open_fixture('process_ais_input_v14.csv')
         actual_output = StringIO.StringIO()
-        expected_output = self._open_fixture('process_ais_output_v1_3.csv')
+        expected_output = self._open_fixture('process_ais_output_v14.csv')
         transform = process_ais.Transform()
         transform.transform_file(csv_in, actual_output)
         actual_output.seek(0)

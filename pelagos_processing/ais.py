@@ -30,12 +30,5 @@
 
 
 """
-PelagosProcessing - Data tools for the Pelagos projects
+AIS data processing
 """
-
-
-import ais
-import grid
-from settings import __version__, __release__, __author__, __license__, __author_email__, __source__
-import utils
-import tests
