@@ -64,3 +64,4 @@ cat $TEMP/out-* | gzip -c | gsutil cp - $OUT
 echo ""
 echo "$(date)" "Run Complete"
 
+rm -rf $TEMP
