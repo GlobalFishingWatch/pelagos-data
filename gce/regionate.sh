@@ -60,7 +60,15 @@ done
 wait
 
 echo "$(date) Merging results into $OUT"
-cat $TEMP/out-* | gzip -c | gsutil cp - $OUT 
+
+## NB: This does not work for files larger than 2GB
+## Gives error:  Failure: size does not fit in an int.
+# cat $TEMP/out-* | gzip -c | gsutil cp - $OUT
+
+# Need to do this instead
+cat $TEMP/out-* | gzip -c > regionate.json.gz
+gsutil cp redionate.json.gz $OUT
+
 echo ""
 echo "$(date)" "Run Complete"
 
