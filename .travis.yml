@@ -35,8 +35,8 @@ python:
   - "2.7"
 
 before_install:
-  - sudo apt-get install libgdal1-dev
-  - sudo apt-get install gdal-bin
+  - ./gce/build-gdal.sh
+  - ./gce/test-geos.py
 
 install:
   - "pip install -r requirements.txt"

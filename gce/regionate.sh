@@ -72,3 +72,4 @@ gsutil cp redionate.json.gz $OUT
 echo ""
 echo "$(date)" "Run Complete"
 
+rm -rf $TEMP
