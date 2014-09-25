@@ -35,7 +35,7 @@
 """
 Clip arbitrary regions to quad tree levels
 
-See pelagos_processing.cmdl.gridify for more information
+See pelagos_processing.cmdl.process_ais for more information
 """
 
 
@@ -51,4 +51,4 @@ import pelagos_processing
 if __name__ == '__main__':
 
     # Remove script name and give the rest to main
-    sys.exit(pelagos_processing.cmdl.gridify.main(sys.argv[1:]))
+    sys.exit(pelagos_processing.cmdl.process_ais.main(sys.argv[1:]))

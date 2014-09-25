@@ -34,6 +34,6 @@ Components for commandline utilities
 """
 
 
-from . import common
+from . import components
 from . import gridify
 from . import process_ais

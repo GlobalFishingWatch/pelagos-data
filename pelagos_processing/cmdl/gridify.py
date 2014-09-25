@@ -42,8 +42,8 @@ import os
 from os.path import *
 import sys
 
-import common
-from common import *
+import components
+from components import *
 
 try:
     from osgeo import ogr
@@ -240,7 +240,7 @@ def main(args):
             # User feedback
             elif arg in ('-q', '-quiet'):
                 i += 1
-                common.VERBOSE_MODE = False
+                components.VERBOSE_MODE = False
 
             # Specify input files
             elif arg in ('-g', '-grid'):
