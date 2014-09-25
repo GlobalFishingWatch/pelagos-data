@@ -36,10 +36,10 @@ Vessel processing
 
 from __future__ import unicode_literals
 
-import vectortile
-
 from common import increment_stat
-import settings
+from . import settings
+
+import vectortile
 
 
 #/* ======================================================================= */#
