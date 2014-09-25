@@ -37,6 +37,15 @@ Module-wide settings and options
 from __future__ import unicode_literals
 
 import logging
+import sys
+
+
+#/* ======================================================================= */#
+#/*     Document level information
+#/* ======================================================================= */#
+__all__ = ['__module_name__', '__version__', '__release__', '__author__', '__author_email__', '__source__', '__license__',
+           'MIN_FISHING_SCORE', 'MAX_FISHING_SCORE', 'MAX_ZOOM', 'MIN_SCORE', 'MAX_SCORE', 'MAX_INTERVAL', 'TYPE_NORMAL',
+           'TYPE_SEGMENT_START', 'TYPE_SEGMENT_END', 'STREAM', 'CONFIGFILE', 'logging']
 
 
 #/* ======================================================================= */#
@@ -80,10 +89,19 @@ SOFTWARE.
 
 MIN_FISHING_SCORE = -15.0
 MAX_FISHING_SCORE = 5.0
+MAX_ZOOM = 15
+MIN_SCORE = -15.0
+MAX_SCORE = 5.0
+MAX_INTERVAL = 24 * 60 * 60  # 24 hours
+TYPE_NORMAL = 0
+TYPE_SEGMENT_START = 1
+TYPE_SEGMENT_END = 2
 
 
 #/* ======================================================================= */#
-#/*     Default logging
+#/*     Default logging and streams
 #/* ======================================================================= */#
 
+STREAM = sys.stdout
+CONFIGFILE = 'Config.cfg'
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)

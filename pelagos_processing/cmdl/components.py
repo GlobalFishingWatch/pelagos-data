@@ -34,7 +34,6 @@ Common components for all commandline utilities
 """
 
 
-import json
 from os import linesep
 from .. import settings
 
@@ -51,7 +50,7 @@ DEFAULT_STREAM = settings.STREAM
 #/*     Document level attributes
 #/* ======================================================================= */#
 
-__all__ = ['print_version', 'print_short_version', 'print_license', 'print_help_info', 'vprint', 'string2type']
+__all__ = ['print_version', 'print_short_version', 'print_license', 'print_help_info', 'vprint']
 
 
 #/* ======================================================================= */#

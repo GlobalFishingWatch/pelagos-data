@@ -65,7 +65,7 @@ setup(
     url=pelagos_processing.__source__,
     packages=[
         'pelagos_processing',
-        'pelagos_processing.utils',
+        'pelagos_processing.cmdl',
         'pelagos_processing.tests',
         'pelagos_processing.tests.testdata'
     ],
