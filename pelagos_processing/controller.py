@@ -63,14 +63,26 @@ class Controller(object):
         else:
             raise ValueError("Invalid params - must be a dict, ConfigParser, or path to configfile")
 
-        self.name = self.params['run']['name']
+        _run = 'run'
+        _name = 'name'
+        self.name = self.params[_run][_name]
         self.version = str(self.params['run']['version'])
 
         if self.name is None:
-            raise ValueError("Entry 'name' in section 'run' is None - can't construct fullname")
+            raise ValueError("Entry '%s' in section '%s' is None - can't construct fullname" % (_name, _run))
 
-        self.fullname = '-'.join([datetime.utcnow().strftime('%Y-%m-%d_%H:%m'), getpass.getuser(), self.name, 'v' + self.version])
+        self.fullname = self.params['run'].get(
+            'fullname', '-'.join(
+                [
+                    datetime.utcnow().strftime('%Y-%m-%d_%H:%m'),
+                    getpass.getuser(),
+                    self.name,
+                    'v' + self.version
+                ]
+            )
+        )
 
+        self.run_dir = os.path.join(self.params['run']['process_runs'], self.fullname)
         self.raw = self.params['run']['raw']
         self.bqschema = self.params['run']['bqschema']
         self.bqtable = self.params['run']['bqtable']
@@ -79,22 +91,37 @@ class Controller(object):
         self.shutdown = self.params['run']['shutdown']
 
     @staticmethod
-    def _exists(path):
+    def _exists(check_path):
 
-        path = path.strip()
+        check_path = check_path.strip()
 
         # Local file
-        if len(path) <= 5 or path[:5] != 'gs://' or path[:7] == 'file://':
-            return os.path.exists(path if 'file://' not in path else path[:7])
+        if len(check_path) <= 5 or check_path[:5] != 'gs://' or check_path[:7] == 'file://':
+            return os.path.exists(check_path if 'file://' not in check_path else check_path[:7])
 
         # Google Cloud Storage file
         else:
-            p = subprocess.Popen(['gsutil', 'ls', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # TODO: Migrate to gslib + boto
+            p = subprocess.Popen(['gsutil', 'ls', check_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             output, err = p.communicate()
-            if output.split('\n') >= 1:
+            if output and not err:
                 return True
-            else:
+            elif not output and err:
                 return False
+            else:
+                raise IOError("Could not determine if path exists: %s" % check_path)
+
+    @staticmethod
+    def _bq_obj_exists(obj_path):
+
+        p = subprocess.Popen(['gsutil', 'ls', obj_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, err = p.communicate()
+        if output and not err:
+            return True
+        elif not output and err:
+            return False
+        else:
+            raise IOError("Could not determine if BigQuery object exists: %s" % obj_path)
 
     @staticmethod
     def _onpath(util):
@@ -105,18 +132,28 @@ class Controller(object):
 
     def validate(self):
 
-        if not self._exists(self.raw):
-            raise IOError("Can't find raw input: %s" % self.raw)
-        if not self._exists(self.bqschema):
-            raise IOError("Can't find Big Query schema: %s" % self.bqschema)
-        if not self._exists(self.regions):
-            raise IOError("Can't find regions: %s" % self.regions)
+        # Some of the utilities are used to see if other stuff exists
         for util_name in self.steps:
-            util = self.params[util_name]['util']
+            util = self.params['processing'][util_name + '_util']
             if os.sep in util and not Controller._exists(util) and not Controller._onpath(util):
                 raise IOError("Can't find utility: %s" % util)
 
-        return True
+        # Validate names
+        if ' ' in self.name:
+            raise IOError("Run name cannot contain spaces")
 
-    def go(self):
-        pass
+        # Make sure the target run directory and BigQuery table doesn't exist
+        if self._exists(self.run_dir):
+            raise IOError("Target run directory already exists: %s" % self.run_dir)
+        if self._bq_obj_exists(self.bqtable):
+            raise IOError("Target BigQuery table already exists: %s" % self.bqtable)
+
+        # Validate required options
+        if not self._exists(self.raw):
+            raise IOError("Can't find raw input: %s" % self.raw)
+        if not self._exists(self.bqschema):
+            raise IOError("Can't find BigQuery schema: %s" % self.bqschema)
+        if not self._exists(self.regions):
+            raise IOError("Can't find regions: %s" % self.regions)
+
+        return True
