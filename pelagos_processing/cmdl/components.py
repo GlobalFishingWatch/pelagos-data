@@ -195,12 +195,13 @@ def vprint(message, stream=DEFAULT_STREAM, flush=False):
         for line in message:
 
             # Check if line is just supposed to be a return
-            if len(line) is 0:
-                line = linesep
-            elif line[-1] != linesep:
-                line += linesep
+            if line is not None:
+                if len(line) is 0:
+                    line = linesep
+                elif line[-1] != linesep:
+                    line += linesep
 
-            o_message += line
+                o_message += line
 
         # Write to stream
         if flush:

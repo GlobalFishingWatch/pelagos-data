@@ -33,9 +33,11 @@
 
 
 """
-Clip arbitrary regions to quad tree levels
+Pipeline controller
 """
 
+
+from __future__ import unicode_literals
 
 import inspect
 import os
@@ -177,7 +179,7 @@ def subcommand_validate(subcommand_name, args):
 
             # Positional arguments and errors
             else:
-
+                i += 1
                 arg_error = True
                 vprint("ERROR: Unrecognized argument for subcommand %s: %s" % (subcommand_name, arg))
 
@@ -355,9 +357,17 @@ def subcommand_get(subcommand_name, args):
     # Load and validate configfile
     run = controller.Controller(configfile)
 
-    # Get the property/attribute
-    if hasattr(run, config_option):
-        vprint(getattr(run, config_option))
+    # Get from config dictionary
+    if '.' in config_option:
+        section, option = config_option.split('.')
+        try:
+            vprint(unicode(run.params[section][option]))
+        except (KeyError, TypeError):
+            vprint("ERROR: Invalid section.option: %s" % config_option)
+
+    # Get from run.<property>
+    elif hasattr(run, config_option):
+        vprint(unicode(getattr(run, config_option)))
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Cleanup and return
@@ -413,7 +423,7 @@ def subcommand_setup(subcommand_name, args):
     #/*     Containers
     #/* ----------------------------------------------------------------------- */#
 
-    configfile = None
+    configfile = settings.CONFIGFILE
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Parse arguments
@@ -432,6 +442,13 @@ def subcommand_setup(subcommand_name, args):
                        '-h', '--h', '--usage', '-usage', '--help', '-help', 'help'):
                 return print_sub_setup_help()
 
+            # Configfile via -c syntax
+            elif arg in ('-c', '-config', '--config'):
+                i += 2
+                configfile = abspath(expanduser(args[i - 1]))
+                if isdir(configfile):
+                    configfile = os.path.join(configfile, settings.CONFIGFILE)
+
             # I/O settings
             elif arg in ('-overwrite', '--overwrite'):
                 i += 1
@@ -439,17 +456,9 @@ def subcommand_setup(subcommand_name, args):
 
             # Positional arguments and errors
             else:
-
                 i += 1
-
-                # Catch configfile
-                if configfile is None:
-                    configfile = abspath(expanduser(arg))
-
-                # Unrecognized arguments
-                else:
-                    arg_error = True
-                    vprint("ERROR: Unrecognized argument for subcommand %s: %s" % (subcommand_name, arg))
+                arg_error = True
+                vprint("ERROR: Unrecognized argument for subcommand %s: %s" % (subcommand_name, arg))
 
         # This catches several conditions:
         #   1. The last argument is a flag that requires parameters but the user did not supply the parameter
