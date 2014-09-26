@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+
 # This document is part of pelagos-data
 # https://github.com/skytruth/pelagos-data
 
@@ -30,24 +33,24 @@
 
 
 """
-Files needed for processing
+Interact with a Pelagos pipeline configfile
+
+See pelagos_processing.cmdl.pp_controller for more information
 """
 
 
-import os
+import sys
+
+import pelagos_processing
+from pelagos_processing.cmdl.components import *
+from pelagos_processing.cmdl.pp_controller import *
 
 
 #/* ======================================================================= */#
-#/*     Document level information
+#/*     Command line execution
 #/* ======================================================================= */#
 
-__all__ = ['sample_configfile']
+if __name__ == '__main__':
 
-
-#/* ======================================================================= */#
-#/*     Surface assets
-#/* ======================================================================= */#
-
-_asset_dir = os.path.abspath(os.path.dirname(__file__))
-
-sample_configfile = os.path.join(_asset_dir, 'Sample-Config.cfg')
+    # Remove script name and give the rest to main
+    sys.exit(pelagos_processing.cmdl.pp_controller.main(sys.argv[1:]))

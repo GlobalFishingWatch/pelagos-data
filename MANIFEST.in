@@ -1,3 +1,5 @@
-include README.md
 include LICENSE.txt
+include MANIFEST.in
+include README.md
+recursive-include pelagos_processing/assets *
 recursive-include pelagos_processing/tests/testdata *
