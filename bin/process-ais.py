@@ -42,6 +42,8 @@ See pelagos_processing.cmdl.process_ais for more information
 import sys
 
 import pelagos_processing
+from pelagos_processing.cmdl.process_ais import *
+from pelagos_processing.cmdl.components import *
 
 
 #/* ======================================================================= */#
