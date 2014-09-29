@@ -46,10 +46,8 @@ Setup script for PelagosProcessing
 
 from glob import glob
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
+
 
 import pelagos_processing
 
@@ -63,13 +61,7 @@ setup(
     long_description=pelagos_processing.__doc__,
     license=pelagos_processing.__license__,
     url=pelagos_processing.__source__,
-    packages=[
-        'pelagos_processing',
-        'pelagos_processing.assets',
-        'pelagos_processing.cmdl',
-        'pelagos_processing.tests',
-        'pelagos_processing.tests.testdata'
-    ],
+    packages=find_packages(),
     scripts=glob('bin/*.py'),
     include_package_data=True,
     classifiers=[

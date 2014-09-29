@@ -39,9 +39,11 @@ See pelagos_processing.cmdl.pp_controller for more information
 """
 
 
+from __future__ import unicode_literals
+
 import sys
 
-import pelagos_processing
+# Convenience imports
 from pelagos_processing.cmdl.components import *
 from pelagos_processing.cmdl.pp_controller import *
 
@@ -53,4 +55,4 @@ from pelagos_processing.cmdl.pp_controller import *
 if __name__ == '__main__':
 
     # Remove script name and give the rest to main
-    sys.exit(pelagos_processing.cmdl.pp_controller.main(sys.argv[1:]))
+    sys.exit(main(sys.argv[1:]))
