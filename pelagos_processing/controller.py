@@ -34,6 +34,8 @@ Configfile utilities
 """
 
 
+from __future__ import unicode_literals
+
 from datetime import datetime
 import getpass
 import os
@@ -129,6 +131,13 @@ class Controller(object):
             if Controller._exists(os.path.join(item, util)):
                 return True
         return False
+
+    def get(self, config_option):
+        if '.' in config_option:
+            section, option = config_option.split('.')
+            return self.params[section][option]
+        elif hasattr(self, config_option):
+            return getattr(self, config_option)
 
     def validate(self):
 
