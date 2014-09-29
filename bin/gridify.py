@@ -41,7 +41,7 @@ See pelagos_processing.cmdl.gridify for more information
 
 import sys
 
-import pelagos_processing
+# Convenience imports
 from pelagos_processing.cmdl.gridify import *
 from pelagos_processing.cmdl.components import *
 
@@ -53,4 +53,4 @@ from pelagos_processing.cmdl.components import *
 if __name__ == '__main__':
 
     # Remove script name and give the rest to main
-    sys.exit(pelagos_processing.cmdl.gridify.main(sys.argv[1:]))
+    sys.exit(main(sys.argv[1:]))
