@@ -50,15 +50,8 @@ from .. import settings
 #/*     Define document level information
 #/* ======================================================================= */#
 
-__docname__ = basename(inspect.getfile(inspect.currentframe()))
 __all__ = ['print_usage', 'print_long_usage', 'print_help', 'main']
-
-
-#/* ======================================================================= */#
-#/*     Global variables
-#/* ======================================================================= */#
-
-UTIL_NAME = __docname__
+UTIL_NAME = 'process-ais.py'
 
 
 #/* ======================================================================= */#
