@@ -84,10 +84,13 @@ elif [ "$(hostname)" == "*.local" ]; then
 elif [ ${EXITCODE} -eq 0 ]; then
     echo "Found zero exit code - deleting instance ..."
 
+    # In order to auto-agree to the prompts, use --quiet
     gcloud compute instances delete \
+        --quiet \
         `hostname` \
         --keep-disks boot \
         --delete-disks data \
+        --zone $(basename `curl -s -H "Metadata-Flavor:Google" http://metadata.google.internal/computeMetadata/v1/instance/zone`)
 
 # Non-zero exit code - just exit
 else
