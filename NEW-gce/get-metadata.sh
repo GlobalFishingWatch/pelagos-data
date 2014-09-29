@@ -66,7 +66,7 @@ VALUE=$(curl -s -H "Metadata-Flavor:Google" http://metadata.google.internal/comp
 
 # Dump the value
 if [ ! -z "$TARGET_FILE" ]; then
-    echo "${VALUE}" > ${TARGET_FILE}
+    echo "${VALUE}\n" > ${TARGET_FILE}
 else
     printf "${VALUE}"
 fi

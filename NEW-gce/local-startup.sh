@@ -31,43 +31,214 @@
 #
 # =========================================================================== #
 
-if [ -z "$1" ]
-  then
+
+# TODO: Check configfile before creating instance?  Requires user to have pelagos-data installed.
+
+
+#/* ======================================================================= */#
+#/*     Define PRINT_USAGE function
+#/* ======================================================================= */#
+
+function PRINT_USAGE(){
+
+    SCRIPT_NAME=$(basename $0)
+
     echo ""
-    echo "Usage: $0 INSTANCE_NAME [MACHINE_TYPE]"
+    echo "${SCRIPT_NAME} [-s startup.sh] [-t instance_type] INSTANCE_NAME"
     echo ""
+
+    return 1
+
+}
+
+
+#/* ======================================================================= */#
+#/*     Define LONG_PRINT_USAGE function
+#/* ======================================================================= */#
+
+function PRINT_LONG_USAGE(){
+
+    SCRIPT_NAME=$(basename $0)
+
+    PRINT_USAGE
     echo "   Default machine type is n1-standard-1"
     echo ""
-    echo "   Example:  $0 pelagos-dev-myname"
-    echo "   Example:  $0 pelagos-dev-myname n1-highcpu-4"
+    echo "   Example:  ${SCRIPT_NAME} pelagos-dev-myname"
+    echo "   Example:  ${SCRIPT_NAME} pelagos-dev-myname n1-highcpu-4"
     echo ""
     echo "   For more machine types, see "
     echo "   https://cloud.google.com/compute/docs/machine-types"
+    echo ""
+
+    return 1
+
+}
+
+
+#/* ======================================================================= */#
+#/*     Main Routine
+#/* ======================================================================= */#
+
+
+#/* ----------------------------------------------------------------------- */#
+#/*     Containers
+#/* ----------------------------------------------------------------------- */#
+
+INSTANCE_NAME=
+
+
+#/* ----------------------------------------------------------------------- */#
+#/*     Defaults
+#/* ----------------------------------------------------------------------- */#
+
+CONFIGFILE="Config.cfg"
+STARTUP_SCRIPT="remote-startup.sh"
+INSTANCE_TYPE="n1-standard-1"
+INSTANCE_ZONE="us-central1-a"
+INSTANCE_IMAGE="pelagosdata1"
+
+
+#/* ----------------------------------------------------------------------- */#
+#/*     Parse arguments
+#/* ----------------------------------------------------------------------- */#
+
+ARG_ERROR=false
+while [ -n "${1}" ]; do
+
+    ARG="${1}"
+
+    case "${ARG}" in
+
+        "-usage" | "--usage")
+            PRINT_USAGE
+            exit $?
+            ;;
+
+        "-help" | "--help" | "-long-usage" | "--long-usage")
+            PRINT_LONG_USAGE
+            exit $?
+            ;;
+
+        "-c" | "-config")
+            CONFIGFILE="$2"
+            shift 2
+            ;;
+
+        "-s" | "-startup")
+            STARTUP_SCRIPT="$2"
+            shift 2
+            ;;
+
+        "-t" | "-type")
+            INSTANCE_TYPE="$2"
+            shift 2
+            ;;
+
+        "-i" | "-image")
+            INSTANCE_IMAGE="$2"
+            shift 2
+            ;;
+
+        "-z" | "-zone")
+            INSTANCE_ZONE="$2"
+            shift 2
+            ;;
+
+        *)
+            # Catch instance name
+            if [ -z "${INSTANCE_NAME}" ]; then
+                INSTANCE_NAME="${ARG}"
+                shift 1
+
+            # Catch unrecognized arguments
+            else
+                ARG_ERROR=true
+                echo "ERROR: Unrecognized argument: ${ARG}"
+                shift 1
+            fi
+            ;;
+    esac
+done
+
+
+#/* ----------------------------------------------------------------------- */#
+#/*     Validate
+#/* ----------------------------------------------------------------------- */#
+
+BAIL=false
+
+# Check arguments
+if [ "${ARG_ERROR}" = true ]; then
+    echo "ERROR: Did not successfully parse arguments"
+    BAIL=true
+fi
+
+# Check instance name
+if [ -z "${INSTANCE_NAME}" ]; then
+    echo "ERROR: Need an instance name"
+    BAIL=true
+fi
+
+# Check startup script
+if [ -z "${STARTUP_SCRIPT}" ]; then
+    echo "ERROR: Need a startup script"
+    BAIL=true
+elif [ ! -f "${STARTUP_SCRIPT}" ]; then
+    echo "ERROR: Can't find startup script: ${STARTUP_SCRIPT}"
+    BAIL=true
+fi
+
+# Check configfile
+if [ -z "${CONFIGFILE}" ]; then
+    echo "ERROR: Need a configfile"
+    BAIL=true
+elif [ ! -f "${CONFIGFILE}" ]; then
+    echo "ERROR: Can't find configfile: ${CONFIGFILE}"
+    BAIL=true
+fi
+
+# Found an error - exit
+if [ "${BAIL}" = true ]; then
     exit 1
 fi
 
-NAME=$1
 
-if [ -z "$2" ]; then
-  TYPE="n1-standard-1"
-else
-  TYPE=$2
-fi
+#/* ----------------------------------------------------------------------- */#
+#/*     Run startup
+#/* ----------------------------------------------------------------------- */#
 
-SCRIPT="remote-startup.sh"
-
-echo "Starting GCE instance $NAME as $TYPE"
-echo "Using startup script $SCRIPT"
+echo ""
+echo "Starting GCE instance ${INSTANCE_NAME} as ${INSTANCE_TYPE}"
+echo "  Configfile: ${CONFIGFILE}"
+echo "  Startup:    ${STARTUP_SCRIPT}"
 echo ""
 
 # Create the instance
-gcutil \
-    addinstance \
-    $NAME \
-    --machine_type=$TYPE \
-    --image=pelagosdata1 \
-    --service_account_scope=compute-rw,https://www.googleapis.com/auth/devstorage.full_control,https://www.googleapis.com/auth/bigquery,https://www.googleapis.com/auth/appengine.admin \
-    --metadata_from_file=startup-script:$SCRIPT \
-    --zone=us-central1-a
+gcloud  compute instances create \
+    "${INSTANCE_NAME}" \
+    --machine-type "${INSTANCE_TYPE}" \
+    --image "${INSTANCE_IMAGE}" \
+    --scopes \
+        compute-rw \
+        https://www.googleapis.com/auth/devstorage.full_control \
+        https://www.googleapis.com/auth/bigquery \
+        https://www.googleapis.com/auth/appengine.admin \
+    --metadata-from-file \
+        startup-script="${STARTUP_SCRIPT}" \
+        configfile="${CONFIGFILE}" \
+    --zone "${INSTANCE_ZONE}"
+
+# Check to see if the gcloud command exited properly
+RESULT=$($?)
+if [ "${RESULT}" -ne 0 ]; then
+    echo "WARNING: Found a non-zero exit code for instance creation: ${RESULT}"
+fi
+
+
+#/* ----------------------------------------------------------------------- */#
+#/*     Cleanup
+#/* ----------------------------------------------------------------------- */#
 
 echo "Done with local startup"
+
+exit ${RESULT}

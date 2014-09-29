@@ -36,16 +36,18 @@
 # https://console.developers.google.com/project/apps~skytruth-pelagos-dev/compute/imagesDetail/global/images/pelagosdata1
 
 
+#/* ----------------------------------------------------------------------- */#
+#/*     Setup requirements
+#/* ----------------------------------------------------------------------- */#
+
 # Make sure Google Cloud Components are up to date
 sudo gcloud components update -q
 sudo gcloud components update gae-python -q
 sudo gcloud components update app -q
 
-
 # Pull processing repo
 cd /usr/local/src/pelagos-data
 sudo git pull
-
 
 # Make sure pip is up to date, install requirements, and install repo
 sudo pip install pip --upgrade
@@ -53,25 +55,53 @@ sudo pip install -r requirements.txt
 sudo pip install . --upgrade
 
 
+#/* ----------------------------------------------------------------------- */#
+#/*     Process data
+#/* ----------------------------------------------------------------------- */#
+
 # Return home and run processing script
 cd ~/
 process-controller.py
-EXITCODE=$?
+EXITCODE=$($?)
 
 
-# Exit code is 0 but script is running locally and not on a GCE instance
-if [ "`hostname`" == "*.local" ] && [ $EXITCODE -eq 0 ]; then
-    echo "Found zero exit code, but running locally - skipping deleteinstance"
-    exit 0
+#/* ----------------------------------------------------------------------- */#
+#/*     Determine whether instance should be shut down
+#/* ----------------------------------------------------------------------- */#
+
+# Determine if configfile says the instance should be terminated
+DO_TERMINATE=$(pp_controller.py get run.shutdown | tr '[:upper:]' '[:lower:]')
+
+# Configfile explicitly says do not delete
+if [ "${DO_TERMINATE}" == false ]; then
+    echo "Configfile prevents instance shutdown - skipping"
+
+# Script running locally - skip shutdown
+elif [ "$(hostname)" == "*.local" ]; then
+    echo "Running locally - skipping delete instance"
 
 # Exit code is 0 - delete instance
-elif [ $EXITCODE -eq 0 ]; then
+elif [ ${EXITCODE} -eq 0 ]; then
     echo "Found zero exit code - deleting instance ..."
-    gcutil deleteinstance -f `hostname` --nodelete_boot_pd
-    exit $EXITCODE
+
+    gcloud compute instances delete \
+        `hostname` \
+        --keep-disks boot \
+        --delete-disks data \
 
 # Non-zero exit code - just exit
 else
-    echo "ERROR: Found a non-zero exit code - skipping shutdown"
-    exit $EXITCODE
+    echo "ERROR: Found a non-zero exit code - skipping delete instance"
 fi
+
+
+#/* ----------------------------------------------------------------------- */#
+#/*     Cleanup
+#/* ----------------------------------------------------------------------- */#
+
+# Exit
+if [ ${EXITCODE} -ne 0 ]; then
+    echo "WARNING: Found non-zero exit code: ${EXITCODE}"
+fi
+
+exit ${EXITCODE}
