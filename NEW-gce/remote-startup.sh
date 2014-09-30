@@ -40,20 +40,22 @@
 #/*     Setup requirements
 #/* ----------------------------------------------------------------------- */#
 
+STARTUP_LOG="~/Startup-Log.txt"
+
 # Make sure Google Cloud Components are up to date
-sudo gcloud components update -q
-sudo gcloud components update gae-python -q
-sudo gcloud components update app -q
+sudo gcloud components update -q >> ${STARTUP_LOG}
+sudo gcloud components update gae-python -q >> ${STARTUP_LOG}
+sudo gcloud components update app -q >> ${STARTUP_LOG}
 
 # Pull processing repo
-cd /usr/local/src/pelagos-data
-sudo git pull
-sudo git checkout -b pipeline origin/master
+cd /usr/local/src/pelagos-data >> ${STARTUP_LOG}
+sudo git pull >> ${STARTUP_LOG}
+sudo git checkout -b pipeline origin/master >> ${STARTUP_LOG}
 
 # Make sure pip is up to date, install requirements, and install repo
-sudo pip install pip --upgrade
-sudo pip install -r requirements.txt
-sudo pip install . --upgrade
+sudo pip install pip --upgrade >> ${STARTUP_LOG}
+sudo pip install -r requirements.txt >> ${STARTUP_LOG}
+sudo pip install . --upgrade >> ${STARTUP_LOG}
 
 
 #/* ----------------------------------------------------------------------- */#
@@ -81,27 +83,26 @@ DO_TERMINATE=$(pp_controller.py get run.shutdown | tr '[:upper:]' '[:lower:]')
 
 # Configfile explicitly says do not delete
 if [ "${DO_TERMINATE}" == false ]; then
-    echo "Configfile prevents instance shutdown - skipping"
+    echo "Configfile prevents instance shutdown - skipping" >> ${STARTUP_LOG}
 
 # Script running locally - skip shutdown
 elif [ "$(hostname)" == "*.local" ]; then
-    echo "Running locally - skipping delete instance"
+    echo "Running locally - skipping delete instance" >> ${STARTUP_LOG}
 
 # Exit code is 0 - delete instance
 elif [ ${EXITCODE} -eq 0 ]; then
-    echo "Found zero exit code - deleting instance ..."
+    echo "Found zero exit code - deleting instance ..." >> ${STARTUP_LOG}
 
     # In order to auto-agree to the prompts, use --quiet
     gcloud compute instances delete \
         --quiet \
         `hostname` \
-        --keep-disks boot \
-        --delete-disks data \
-        --zone $(basename `curl -s -H "Metadata-Flavor:Google" http://metadata.google.internal/computeMetadata/v1/instance/zone`)
+        --zone $(basename `curl -s -H "Metadata-Flavor:Google" http://metadata.google.internal/computeMetadata/v1/instance/zone`) \
+        >> ${STARTUP_LOG}
 
 # Non-zero exit code - just exit
 else
-    echo "ERROR: Found a non-zero exit code - skipping delete instance"
+    echo "ERROR: Found a non-zero exit code - skipping delete instance" >> ${STARTUP_LOG}
 fi
 
 
@@ -111,7 +112,7 @@ fi
 
 # Exit
 if [ ${EXITCODE} -ne 0 ]; then
-    echo "WARNING: Found non-zero exit code: ${EXITCODE}"
+    echo "WARNING: Found non-zero exit code: ${EXITCODE}" >> ${STARTUP_LOG}
 fi
 
 exit ${EXITCODE}
