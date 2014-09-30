@@ -74,9 +74,9 @@ class Controller(object):
             raise ValueError("Entry '%s' in section '%s' is None - can't construct fullname" % (_name, _run))
 
         self.fullname = self.params['run'].get(
-            'fullname', '-'.join(
+            'fullname', '_'.join(
                 [
-                    datetime.utcnow().strftime('%Y-%m-%d_%H:%m'),
+                    datetime.utcnow().strftime('%Y%m%d'),
                     getpass.getuser(),
                     self.name,
                     'v' + self.version
@@ -132,6 +132,15 @@ class Controller(object):
                 return True
         return False
 
+    @staticmethod
+    def _gce_instance_exists(instance_name):
+        p = subprocess.Popen(['gcloud', 'compute', 'instances', 'list'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, err = p.communicate()
+        if output and not err:
+            return instance_name in output
+        else:
+            raise IOError("Could not determine if GCE instance exists: %s" % instance_name)
+
     def get(self, config_option):
         if '.' in config_option:
             section, option = config_option.split('.')
@@ -150,6 +159,10 @@ class Controller(object):
         # Validate names
         if ' ' in self.name:
             raise IOError("Run name cannot contain spaces")
+
+        # Check if an instance with the same name already exists
+        if Controller._gce_instance_exists(self.fullname):
+            raise IOError("GCE instance already exists: %s" % self.fullname)
 
         # Make sure the target run directory and BigQuery table doesn't exist
         if self._exists(self.run_dir):
