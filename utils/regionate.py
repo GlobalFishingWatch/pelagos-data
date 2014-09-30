@@ -100,7 +100,9 @@ def regionate (file_in, file_out, arg):
             while feature:
                 field_idx = feature.GetFieldIndex(arg['--attribute'])
                 if field_idx != -1 and feature.GetGeometryRef().Intersects(point):
-                    regionids.append(feature.GetFieldAsString(field_idx))
+                    # TODO: Replace line below with:
+                    #regionids.append(feature.GetFieldAsString(field_idx))
+                    regionids += feature.GetFieldAsString(field_idx).split(',')
                 feature = layer.GetNextFeature()
         row_out = row
         row_out['region'] = regionids
