@@ -36,7 +36,7 @@
 if [ -z "$1" ] || [ "$1" == "-usage" ] || [ "$1" == "--usage" ] || [ "$1" == "-help" ] || [ "$1" == "--help" ]; then
 
     echo ""
-    echo "Usage: $(basename $0) KEY [TARGET_FILE]"
+    echo "$(basename $0) KEY [TARGET_FILE]"
     echo ""
 
     exit 1
