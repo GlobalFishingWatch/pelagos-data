@@ -222,9 +222,11 @@ fi
 
 
 echo ""
-echo "Starting GCE instance ${INSTANCE_NAME} as ${INSTANCE_TYPE}"
+echo "Starting GCE instance ..."
 echo "  Configfile: ${CONFIGFILE}"
-echo "  Startup:    ${STARTUP_SCRIPT}"
+echo "  Script:     ${STARTUP_SCRIPT}"
+echo "  Name:       ${INSTANCE_NAME}"
+echo "  Type:       ${INSTANCE_TYPE}"
 echo ""
 
 
@@ -254,6 +256,8 @@ fi
 #/*     Cleanup
 #/* ----------------------------------------------------------------------- */#
 
+echo ""
 echo "Done with local startup"
+echo ""
 
 exit ${RESULT}
