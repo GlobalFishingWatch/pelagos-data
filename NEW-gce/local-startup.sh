@@ -42,9 +42,11 @@
 function PRINT_USAGE(){
 
     SCRIPT_NAME=$(basename $0)
+    PADDING=$(printf "\ %.0s" {1..${#SCRIPT_NAME}})
 
     echo ""
-    echo "${SCRIPT_NAME} [-s startup.sh] [-t instance_type] INSTANCE_NAME"
+    echo "${SCRIPT_NAME} [-s startup.sh] [-t instance_type] [-c configfile]"
+    echo "${PADDING}     [-z zone] [-n instance_name] [-i image]"
     echo ""
 
     return 1
@@ -66,7 +68,7 @@ function PRINT_LONG_USAGE(){
     echo "   Example:  ${SCRIPT_NAME} pelagos-dev-myname"
     echo "   Example:  ${SCRIPT_NAME} pelagos-dev-myname n1-highcpu-4"
     echo ""
-    echo "   For more machine types, see "
+    echo "   For more machine types, see:"
     echo "   https://cloud.google.com/compute/docs/machine-types"
     echo ""
 
@@ -81,13 +83,6 @@ function PRINT_LONG_USAGE(){
 
 
 #/* ----------------------------------------------------------------------- */#
-#/*     Containers
-#/* ----------------------------------------------------------------------- */#
-
-INSTANCE_NAME=
-
-
-#/* ----------------------------------------------------------------------- */#
 #/*     Defaults
 #/* ----------------------------------------------------------------------- */#
 
@@ -96,6 +91,8 @@ STARTUP_SCRIPT="remote-startup.sh"
 INSTANCE_TYPE="n1-standard-1"
 INSTANCE_ZONE="us-central1-a"
 INSTANCE_IMAGE="pelagosdata1"
+INSTANCE_NAME=
+PP_CONTROLLER="pp-controller.py"
 
 
 #/* ----------------------------------------------------------------------- */#
@@ -144,6 +141,11 @@ while [ -n "${1}" ]; do
             shift 2
             ;;
 
+        "-n" | "-name")
+            INSTANCE_NAME="$2"
+            shift 2
+            ;;
+
         *)
             # Catch instance name
             if [ -z "${INSTANCE_NAME}" ]; then
@@ -173,12 +175,6 @@ if [ "${ARG_ERROR}" = true ]; then
     BAIL=true
 fi
 
-# Check instance name
-if [ -z "${INSTANCE_NAME}" ]; then
-    echo "ERROR: Need an instance name"
-    BAIL=true
-fi
-
 # Check startup script
 if [ -z "${STARTUP_SCRIPT}" ]; then
     echo "ERROR: Need a startup script"
@@ -197,6 +193,12 @@ elif [ ! -f "${CONFIGFILE}" ]; then
     BAIL=true
 fi
 
+# Make sure the controller script is available
+if [ "$(which ${PP_CONTROLLER})" == "" ]; then
+    echo "ERROR: Utility '${PP_CONTROLLER}' isn't on path"
+    BAIL=true
+fi
+
 # Found an error - exit
 if [ "${BAIL}" = true ]; then
     exit 1
@@ -207,11 +209,24 @@ fi
 #/*     Run startup
 #/* ----------------------------------------------------------------------- */#
 
+if [ -z "${INSTANCE_NAME}" ]; then
+    INSTANCE_NAME="$(pp-controller.py get fullname)"
+    EXITCODE=$?
+    if [ ${EXITCODE} -ne 0 ]; then
+        echo "ERROR: Tried to get instance name from configfile but received a non-zero exit code"
+        echo "       Configfile result: ${INSTANCE_NAME}"
+        echo "       Exit code: ${EXITCODE}"
+        exit ${EXITCODE}
+    fi
+fi
+
+
 echo ""
 echo "Starting GCE instance ${INSTANCE_NAME} as ${INSTANCE_TYPE}"
 echo "  Configfile: ${CONFIGFILE}"
 echo "  Startup:    ${STARTUP_SCRIPT}"
 echo ""
+
 
 # Create the instance
 gcloud  compute instances create \
@@ -229,7 +244,7 @@ gcloud  compute instances create \
     --zone "${INSTANCE_ZONE}"
 
 # Check to see if the gcloud command exited properly
-RESULT=$($?)
+RESULT=$(echo $?)
 if [ "${RESULT}" -ne 0 ]; then
     echo "WARNING: Found a non-zero exit code for instance creation: ${RESULT}"
 fi

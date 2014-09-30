@@ -48,6 +48,7 @@ sudo gcloud components update app -q
 # Pull processing repo
 cd /usr/local/src/pelagos-data
 sudo git pull
+sudo git checkout -b pipeline origin/master
 
 # Make sure pip is up to date, install requirements, and install repo
 sudo pip install pip --upgrade
@@ -61,8 +62,14 @@ sudo pip install . --upgrade
 
 # Return home and run processing script
 cd ~/
-process-controller.py
-EXITCODE=$($?)
+echo "========"
+echo "RUN"
+echo "========"
+EXITCODE=127
+
+#process-controller.py
+#EXITCODE=$($?)
+
 
 
 #/* ----------------------------------------------------------------------- */#
