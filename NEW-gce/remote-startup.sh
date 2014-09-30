@@ -44,9 +44,9 @@ STARTUP_LOG="~/Startup-Log.txt"
 touch ~/PROOF
 
 # Make sure Google Cloud Components are up to date
-sudo gcloud components update -q | tee -a ${STARTUP_LOG}
-sudo gcloud components update gae-python -q | tee -a ${STARTUP_LOG}
-sudo gcloud components update app -q | tee -a ${STARTUP_LOG}
+sudo gcloud components update | tee -a ${STARTUP_LOG}
+sudo gcloud components update gae-python | tee -a ${STARTUP_LOG}
+sudo gcloud components update app | tee -a ${STARTUP_LOG}
 
 # Pull processing repo
 cd /usr/local/src/pelagos-data | tee -a ${STARTUP_LOG}
