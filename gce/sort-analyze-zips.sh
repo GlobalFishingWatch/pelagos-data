@@ -1,7 +1,11 @@
 #!/bin/bash
 
+
 OUTPUT=sorted.csv.gz
 rm $OUTPUT
+
+# Add csv header to the output file
+gzip -c /usr/local/src/pelagos-data/schema/scored-ais-raw-schema-1.3.csv > $OUTPUT
 
 for Z in unsorted/*.zip
 do
