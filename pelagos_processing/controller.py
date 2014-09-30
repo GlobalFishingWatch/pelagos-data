@@ -76,8 +76,8 @@ class Controller(object):
         self.fullname = self.params['run'].get(
             'fullname', '-'.join(
                 [
-                    datetime.utcnow().strftime('%Y%m%d'),
                     getpass.getuser(),
+                    datetime.utcnow().strftime('%Y%m%d'),
                     self.name,
                     'v' + self.version
                 ]
