@@ -41,21 +41,22 @@
 #/* ----------------------------------------------------------------------- */#
 
 STARTUP_LOG="~/Startup-Log.txt"
+touch ~/PROOF
 
 # Make sure Google Cloud Components are up to date
-sudo gcloud components update -q >> ${STARTUP_LOG}
-sudo gcloud components update gae-python -q >> ${STARTUP_LOG}
-sudo gcloud components update app -q >> ${STARTUP_LOG}
+sudo gcloud components update -q | tee -a ${STARTUP_LOG}
+sudo gcloud components update gae-python -q | tee -a ${STARTUP_LOG}
+sudo gcloud components update app -q | tee -a ${STARTUP_LOG}
 
 # Pull processing repo
-cd /usr/local/src/pelagos-data >> ${STARTUP_LOG}
-sudo git pull >> ${STARTUP_LOG}
-sudo git checkout -b pipeline origin/master >> ${STARTUP_LOG}
+cd /usr/local/src/pelagos-data | tee -a ${STARTUP_LOG}
+sudo git pull | tee -a ${STARTUP_LOG}
+sudo git checkout -b pipeline origin/master | tee -a ${STARTUP_LOG}
 
 # Make sure pip is up to date, install requirements, and install repo
-sudo pip install pip --upgrade >> ${STARTUP_LOG}
-sudo pip install -r requirements.txt >> ${STARTUP_LOG}
-sudo pip install . --upgrade >> ${STARTUP_LOG}
+sudo pip install pip --upgrade | tee -a ${STARTUP_LOG}
+sudo pip install -r requirements.txt | tee -a ${STARTUP_LOG}
+sudo pip install . --upgrade | tee -a ${STARTUP_LOG}
 
 
 #/* ----------------------------------------------------------------------- */#
@@ -83,26 +84,26 @@ DO_TERMINATE=$(pp_controller.py get run.shutdown | tr '[:upper:]' '[:lower:]')
 
 # Configfile explicitly says do not delete
 if [ "${DO_TERMINATE}" == false ]; then
-    echo "Configfile prevents instance shutdown - skipping" >> ${STARTUP_LOG}
+    echo "Configfile prevents instance shutdown - skipping" | tee -a ${STARTUP_LOG}
 
 # Script running locally - skip shutdown
 elif [ "$(hostname)" == "*.local" ]; then
-    echo "Running locally - skipping delete instance" >> ${STARTUP_LOG}
+    echo "Running locally - skipping delete instance" | tee -a ${STARTUP_LOG}
 
 # Exit code is 0 - delete instance
 elif [ ${EXITCODE} -eq 0 ]; then
-    echo "Found zero exit code - deleting instance ..." >> ${STARTUP_LOG}
+    echo "Found zero exit code - deleting instance ..." | tee -a ${STARTUP_LOG}
 
     # In order to auto-agree to the prompts, use --quiet
     gcloud compute instances delete \
         --quiet \
         `hostname` \
         --zone $(basename `curl -s -H "Metadata-Flavor:Google" http://metadata.google.internal/computeMetadata/v1/instance/zone`) \
-        >> ${STARTUP_LOG}
+        | tee -a ${STARTUP_LOG}
 
 # Non-zero exit code - just exit
 else
-    echo "ERROR: Found a non-zero exit code - skipping delete instance" >> ${STARTUP_LOG}
+    echo "ERROR: Found a non-zero exit code - skipping delete instance" | tee -a ${STARTUP_LOG}
 fi
 
 
@@ -112,7 +113,7 @@ fi
 
 # Exit
 if [ ${EXITCODE} -ne 0 ]; then
-    echo "WARNING: Found non-zero exit code: ${EXITCODE}" >> ${STARTUP_LOG}
+    echo "WARNING: Found non-zero exit code: ${EXITCODE}" | tee -a ${STARTUP_LOG}
 fi
 
 exit ${EXITCODE}
