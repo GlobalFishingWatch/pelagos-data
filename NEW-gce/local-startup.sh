@@ -210,7 +210,7 @@ fi
 #/* ----------------------------------------------------------------------- */#
 
 if [ -z "${INSTANCE_NAME}" ]; then
-    INSTANCE_NAME="$(pp-controller.py get fullname)"
+    INSTANCE_NAME="$(pp-controller.py -c ${CONFIGFILE} get fullname)"
     EXITCODE=$?
     if [ ${EXITCODE} -ne 0 ]; then
         echo "ERROR: Tried to get instance name from configfile but received a non-zero exit code"

@@ -41,22 +41,21 @@
 #/* ----------------------------------------------------------------------- */#
 
 STARTUP_LOG="~/Startup-Log.txt"
-touch ~/PROOF
 
 # Make sure Google Cloud Components are up to date
-sudo gcloud components update | tee -a ${STARTUP_LOG}
-sudo gcloud components update gae-python | tee -a ${STARTUP_LOG}
-sudo gcloud components update app | tee -a ${STARTUP_LOG}
+sudo gcloud components update -q
+sudo gcloud components update gae-python -q
+sudo gcloud components update app -q
 
 # Pull processing repo
-cd /usr/local/src/pelagos-data | tee -a ${STARTUP_LOG}
-sudo git pull | tee -a ${STARTUP_LOG}
-sudo git checkout -b pipeline origin/master | tee -a ${STARTUP_LOG}
+cd /usr/local/src/pelagos-data
+sudo git pull
+sudo git checkout -b pipeline origin/master
 
 # Make sure pip is up to date, install requirements, and install repo
-sudo pip install pip --upgrade | tee -a ${STARTUP_LOG}
-sudo pip install -r requirements.txt | tee -a ${STARTUP_LOG}
-sudo pip install . --upgrade | tee -a ${STARTUP_LOG}
+sudo pip install pip --upgrade
+sudo pip install -r requirements.txt
+sudo pip install . --upgrade
 
 
 #/* ----------------------------------------------------------------------- */#
@@ -91,6 +90,7 @@ elif [ "$(hostname)" == "*.local" ]; then
     echo "Running locally - skipping delete instance" | tee -a ${STARTUP_LOG}
 
 # Exit code is 0 - delete instance
+# TODO: Check configfile to see if terminate should actually happen
 elif [ ${EXITCODE} -eq 0 ]; then
     echo "Found zero exit code - deleting instance ..." | tee -a ${STARTUP_LOG}
 
@@ -98,6 +98,7 @@ elif [ ${EXITCODE} -eq 0 ]; then
     gcloud compute instances delete \
         --quiet \
         `hostname` \
+        --delete-disks boot \
         --zone $(basename `curl -s -H "Metadata-Flavor:Google" http://metadata.google.internal/computeMetadata/v1/instance/zone`) \
         | tee -a ${STARTUP_LOG}
 
