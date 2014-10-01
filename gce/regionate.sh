@@ -67,7 +67,7 @@ echo "$(date) Merging results into $OUT"
 
 # Need to do this instead
 cat $TEMP/out-* | gzip -c > regionate.json.gz
-gsutil cp redionate.json.gz $OUT
+gsutil cp regionate.json.gz $OUT
 
 echo ""
 echo "$(date)" "Run Complete"
