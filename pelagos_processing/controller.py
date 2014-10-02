@@ -74,7 +74,7 @@ class Controller(object):
             raise ValueError("Entry '%s' in section '%s' is None - can't construct fullname" % (_name, _run))
 
         self.fullname = self.params['run'].get(
-            'fullname', '-'.join(
+            'fullname', '_'.join(
                 [
                     getpass.getuser(),
                     datetime.utcnow().strftime('%Y%m%d'),
