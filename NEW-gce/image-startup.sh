@@ -32,97 +32,89 @@
 # =========================================================================== #
 
 
-# General remote GCE instance startup
+# Startup script for image pelagosdata1
+# https://console.developers.google.com/project/apps~skytruth-pelagos-dev/compute/imagesDetail/global/images/pelagosdata1
 
 
 #/* ----------------------------------------------------------------------- */#
-#/*     Updates
+#/*     Setup requirements
 #/* ----------------------------------------------------------------------- */#
 
-# Update gcloud
+STARTUP_LOG="~/Startup-Log.txt"
+
+# Make sure Google Cloud Components are up to date
 sudo gcloud components update -q
 sudo gcloud components update gae-python -q
 sudo gcloud components update app -q
 
-# Update pip
+# Pull processing repo
+cd /usr/local/src/pelagos-data
+sudo git pull
+sudo git checkout -b pipeline origin/master
+
+# Make sure pip is up to date, install requirements, and install repo
 sudo pip install pip --upgrade
-
-echo ""
-echo "Done updating"
-echo ""
+sudo pip install -r requirements.txt
+sudo pip install . --upgrade
 
 
 #/* ----------------------------------------------------------------------- */#
-#/*     Run job
+#/*     Process data
 #/* ----------------------------------------------------------------------- */#
 
-# Get path to an executable
-JOB_PATH="$(curl -s -H "Metadata-Flavor:Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/job)"
-if [ ${?} -ne 0 ]; then
-    JOB_PATH=
-fi
+# Return home and run processing script
+cd ~/
+echo "========"
+echo "RUN"
+echo "========"
+EXITCODE=127
 
-# Get executable arguments
-JOB_ARGS="$(curl -s -H "Metadata-Flavor:Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/job-args)"
-if [ ${?} -ne 0 ]; then
-    JOB_ARGS=
-fi
-
-# No job to run
-if [ -z "${JOB_PATH}" ]; then
-    echo ""
-    echo "No job to run"
-    echo ""
-
-# Found a path to a job that exists - execute
-elif [ -f "${JOB_PATH}" ]; then
-    ${JOB_PATH} ${JOB_ARGS}
-    JOB_EXITCODE=$(echo $?)
-
-# Found a path to a job that does not exist - error
-elif [ ! -z "${JOB_PATH}" ] && [ ! -f "${JOB_PATH}" ]; then
-    echo "ERROR: Found a job path that does not exist: ${JOB_PATH}"
-fi
+#process-controller.py
+#EXITCODE=$($?)
 
 
 
 #/* ----------------------------------------------------------------------- */#
-#/*     Terminate
+#/*     Determine whether instance should be shut down
 #/* ----------------------------------------------------------------------- */#
 
 # Determine if configfile says the instance should be terminated
-DO_TERMINATE="$(curl -s -H "Metadata-Flavor:Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/terminate | tr '[:upper:]' '[:lower:]')"
-if [ ${?} -ne 0 ]; then
-    DO_TERMINATE=false
-fi
+DO_TERMINATE=$(pp-controller.py get run.shutdown | tr '[:upper:]' '[:lower:]')
 
-# Running locally - skipping terminate
-if [ "$(hostname)" == "*.local" ]; then
-    echo "Running locally - skipping terminate"
+# Configfile explicitly says do not delete
+if [ "${DO_TERMINATE}" == false ]; then
+    echo "Configfile prevents instance shutdown - skipping" | tee -a ${STARTUP_LOG}
 
-# Don't terminate
-elif [ "${DO_TERMINATE}" == false ]; then
-    echo "Terminate set to ${DO_TERMINATE}"
-    if [ ! -z ${JOB_EXITCODE} ]; then
-        echo "  Job exited with: ${JOB_EXITCODE}"
-    fi
+# Script running locally - skip shutdown
+elif [ "$(hostname)" == "*.local" ]; then
+    echo "Running locally - skipping delete instance" | tee -a ${STARTUP_LOG}
 
-# Terminate if specified and the job ran successfully
-elif [ "${DO_TERMINATE}" == true ] && [ ! -z "${JOB_EXITCODE}" ] && [ ${JOB_EXITCODE} -eq 0 ]; then
+# Exit code is 0 - delete instance
+# TODO: Check configfile to see if terminate should actually happen
+elif [ ${EXITCODE} -eq 0 ]; then
+    echo "Found zero exit code - deleting instance ..." | tee -a ${STARTUP_LOG}
 
-    echo "Job exited with a zero - deleting instance ..."
-    ZONE="$(curl -s -H 'Metadata-Flavor:Google' http://metadata.google.internal/computeMetadata/v1/instance/zone)"
+    # In order to auto-agree to the prompts, use --quiet
     gcloud compute instances delete \
         --quiet \
         `hostname` \
         --delete-disks boot \
-        --zone $(basename ${ZONE})
+        --zone $(basename `curl -s -H "Metadata-Flavor:Google" http://metadata.google.internal/computeMetadata/v1/instance/zone`) \
+        | tee -a ${STARTUP_LOG}
 
-# Could not terminate for whatever reason
+# Non-zero exit code - just exit
 else
-    echo "ERROR: Could not terminate"
-    echo "       Terminate: ${DO_TERMINATE}"
-    echo "       Job path:  ${JOB_PATH}"
-    echo "       Job args:  ${JOB_ARGS}"
-    echo "       Job exit:  ${JOB_EXITCODE}"
+    echo "ERROR: Found a non-zero exit code - skipping delete instance" | tee -a ${STARTUP_LOG}
 fi
+
+
+#/* ----------------------------------------------------------------------- */#
+#/*     Cleanup
+#/* ----------------------------------------------------------------------- */#
+
+# Exit
+if [ ${EXITCODE} -ne 0 ]; then
+    echo "WARNING: Found non-zero exit code: ${EXITCODE}" | tee -a ${STARTUP_LOG}
+fi
+
+exit ${EXITCODE}

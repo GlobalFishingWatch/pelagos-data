@@ -86,13 +86,11 @@ function PRINT_LONG_USAGE(){
 #/*     Defaults
 #/* ----------------------------------------------------------------------- */#
 
-CONFIGFILE="Config.cfg"
 STARTUP_SCRIPT="remote-startup.sh"
 INSTANCE_TYPE="n1-standard-1"
 INSTANCE_ZONE="us-central1-a"
 INSTANCE_IMAGE="pelagosdata1"
 INSTANCE_NAME=
-PP_CONTROLLER="pp-controller.py"
 
 
 #/* ----------------------------------------------------------------------- */#
@@ -184,15 +182,6 @@ elif [ ! -f "${STARTUP_SCRIPT}" ]; then
     BAIL=true
 fi
 
-# Check configfile
-if [ -z "${CONFIGFILE}" ]; then
-    echo "ERROR: Need a configfile"
-    BAIL=true
-elif [ ! -f "${CONFIGFILE}" ]; then
-    echo "ERROR: Can't find configfile: ${CONFIGFILE}"
-    BAIL=true
-fi
-
 # Make sure the controller script is available
 if [ "$(which ${PP_CONTROLLER})" == "" ]; then
     echo "ERROR: Utility '${PP_CONTROLLER}' isn't on path"
@@ -200,7 +189,7 @@ if [ "$(which ${PP_CONTROLLER})" == "" ]; then
 fi
 
 # Found an error - exit
-if [ "${BAIL}" = true ]; then
+if [ "${BAIL}" == true ]; then
     exit 1
 fi
 
