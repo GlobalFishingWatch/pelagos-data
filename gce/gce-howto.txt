@@ -4,12 +4,16 @@ gcloud auth login
 
 
 ### Setup new CGE Instance with local startup script
-gcutil addinstance pelagos-dev1 \
-   --machine_type=n1-standard-1 \
+gcutil addinstance oceana-report-2 \
+   --machine_type=n1-highcpu-16 \
    --image=pelagosdata1 \
-   --service_account_scope=https://www.googleapis.com/auth/devstorage.full_control,https://www.googleapis.com/auth/bigquery,https://www.googleapis.com/auth/appengine.admin \
+   --service_account_scope=compute-rw,https://www.googleapis.com/auth/devstorage.full_control,https://www.googleapis.com/auth/bigquery,https://www.googleapis.com/auth/appengine.admin \
    --metadata_from_file=startup-script:gce-startup.sh \
-   --zone=us-central1-a
+   --zone=us-central1-a \
+   --disk pelagos-data-1
+#   --boot_disk_size_gb 100 \
+#   --auto_delete_boot_disk \
+#   --boot_disk_type pd-standard \
 
 # Choose a US central zone
 
