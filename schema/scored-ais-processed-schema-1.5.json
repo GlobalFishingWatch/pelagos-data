@@ -1,0 +1,18 @@
+[
+    {"type":"STRING","name":"mmsi"},
+    {"type":"FLOAT","name":"longitude"},
+    {"type":"FLOAT","name":"latitude"},
+    {"type":"TIMESTAMP","name":"timestamp"},
+    {"type":"FLOAT","name":"score"},
+    {"type":"FLOAT","name":"navstat"},
+    {"type":"FLOAT","name":"hdg"},
+    {"type":"FLOAT","name":"rot"},
+    {"type":"FLOAT","name":"cog"},
+    {"type":"FLOAT","name":"sog"},
+    {"type":"STRING","name":"gridcode"},
+    {"type":"INTEGER","name":"interval"},
+    {"type":"INTEGER","name":"type"},
+    {"type":"STRING","name":"next_gridcode"},
+    {"type":"STRING","name":"region","mode":"REPEATED"},
+    {"type":"STRING","name":"ocean"}
+]
