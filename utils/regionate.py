@@ -143,13 +143,15 @@ def regionate(file_in, file_out, arg):
             while feature:
 
                 if feature.GetGeometryRef().Intersects(point):
-                    value = feature.GetField(arg['--attribute']).split(',')
+                    value = feature.GetField(arg['--attribute'])
+                    if value is not None:
+                        value = value.split(',')
 
-                    # Add regionid
-                    if layer.GetName() not in regionids:
-                        regionids[layer.GetName()] = value
-                    else:
-                        regionids[layer.GetName()] += value
+                        # Add regionid
+                        if layer.GetName() not in regionids:
+                            regionids[layer.GetName()] = value
+                        else:
+                            regionids[layer.GetName()] += value
 
                 feature = layer.GetNextFeature()
 
