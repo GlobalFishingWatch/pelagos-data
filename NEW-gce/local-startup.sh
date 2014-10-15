@@ -86,11 +86,7 @@ function PRINT_LONG_USAGE(){
 #/*     Defaults
 #/* ----------------------------------------------------------------------- */#
 
-STARTUP_SCRIPT="remote-startup.sh"
-INSTANCE_TYPE="n1-standard-1"
-INSTANCE_ZONE="us-central1-a"
-INSTANCE_IMAGE="pelagosdata1"
-INSTANCE_NAME=
+CONFIGFILE="Config.cfg"
 
 
 #/* ----------------------------------------------------------------------- */#
