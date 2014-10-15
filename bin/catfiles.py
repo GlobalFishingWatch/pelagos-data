@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+
 # This document is part of pelagos-data
 # https://github.com/skytruth/pelagos-data
 
@@ -30,25 +33,26 @@
 
 
 """
-Data for unittests
+Concatenate input files and add an optional header
+
+See pelagos_processing.cmdl.cat_files for more information
 """
 
 
-import os
+from __future__ import unicode_literals
+
+import sys
+
+# Convenience imports
+from pelagos_processing.cmdl.components import *
+from pelagos_processing.cmdl.cat_files import *
 
 
 #/* ======================================================================= */#
-#/*     Provide easy access to specific test datasets
+#/*     Command line execution
 #/* ======================================================================= */#
 
-_data_dir = os.path.abspath(os.path.dirname(__file__))
+if __name__ == '__main__':
 
-process_ais_input14 = os.path.join(_data_dir, 'process_ais_input_v14.csv')
-process_ais_output14 = os.path.join(_data_dir, 'process_ais_output_v14.csv')
-
-sample_config = os.path.join(_data_dir, 'Test-Config.cfg')
-
-cat1 = os.path.join(_data_dir, 'cat1.csv')
-cat2 = os.path.join(_data_dir, 'cat2.csv')
-cat3 = os.path.join(_data_dir, 'cat3.csv')
-cat4 = os.path.join(_data_dir, 'cat4.csv')
+    # Remove script name and give the rest to main
+    sys.exit(main(sys.argv[1:]))

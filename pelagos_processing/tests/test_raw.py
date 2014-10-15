@@ -30,25 +30,46 @@
 
 
 """
-Data for unittests
+Unittests for pelagos_processing.raw
 """
 
 
 import os
+from os.path import isfile
+import unittest
+
+from pelagos_processing import raw
+from pelagos_processing.tests import testdata
 
 
-#/* ======================================================================= */#
-#/*     Provide easy access to specific test datasets
-#/* ======================================================================= */#
+class DevNull(object):
 
-_data_dir = os.path.abspath(os.path.dirname(__file__))
+    @staticmethod
+    def write(self, *args, **kwargs):
+        pass
 
-process_ais_input14 = os.path.join(_data_dir, 'process_ais_input_v14.csv')
-process_ais_output14 = os.path.join(_data_dir, 'process_ais_output_v14.csv')
 
-sample_config = os.path.join(_data_dir, 'Test-Config.cfg')
+class TestCatFiles(unittest.TestCase):
 
-cat1 = os.path.join(_data_dir, 'cat1.csv')
-cat2 = os.path.join(_data_dir, 'cat2.csv')
-cat3 = os.path.join(_data_dir, 'cat3.csv')
-cat4 = os.path.join(_data_dir, 'cat4.csv')
+    def setUp(self):
+        self.test_file = '.TestCatFiles_standard--a--.csv.ext'
+        if isfile(self.test_file):
+            os.remove(self.test_file)
+
+    def tearDown(self):
+        if isfile(self.test_file):
+            os.remove(self.test_file)
+
+    def test_standard(self):
+
+        input_files = (testdata.cat1, testdata.cat2, testdata.cat3, testdata.cat4)
+        schema = ['uid', 'val']
+        expected = ','.join(schema) + os.linesep
+        for ifile in input_files:
+            with open(ifile) as f:
+                expected += f.read()
+
+        self.assertTrue(raw.cat_files(input_files, self.test_file, schema=schema, write_mode='w'))
+        with open(self.test_file) as f:
+            actual = f.read()
+        self.assertEqual(expected, actual)

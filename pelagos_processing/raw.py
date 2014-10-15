@@ -30,25 +30,51 @@
 
 
 """
-Data for unittests
+Vessel processing
 """
 
+
+from __future__ import unicode_literals
 
 import os
 
 
 #/* ======================================================================= */#
-#/*     Provide easy access to specific test datasets
+#/*     Global variables
 #/* ======================================================================= */#
 
-_data_dir = os.path.abspath(os.path.dirname(__file__))
+RAW_SCHEMA = ['mmsi', 'longitude', 'latitude', 'timestamp', 'score', 'navstat', 'hdg', 'rot', 'cog', 'sog']
 
-process_ais_input14 = os.path.join(_data_dir, 'process_ais_input_v14.csv')
-process_ais_output14 = os.path.join(_data_dir, 'process_ais_output_v14.csv')
 
-sample_config = os.path.join(_data_dir, 'Test-Config.cfg')
+#/* ======================================================================= */#
+#/*     Define cat_files() function
+#/* ======================================================================= */#
 
-cat1 = os.path.join(_data_dir, 'cat1.csv')
-cat2 = os.path.join(_data_dir, 'cat2.csv')
-cat3 = os.path.join(_data_dir, 'cat3.csv')
-cat4 = os.path.join(_data_dir, 'cat4.csv')
+def cat_files(input_files, target_file, schema=RAW_SCHEMA, write_mode='w'):
+
+    # Transform and validate arguments
+    write_mode = write_mode.lower()
+    if isinstance(schema, (list, tuple)):
+        header = ','.join(schema)
+    elif isinstance(schema, (str, unicode)):
+        header = schema
+    else:
+        raise TypeError("Invalid schema: %s" % schema)
+
+    # Make sure all the
+    for ifile in input_files:
+        if not os.access(ifile, os.R_OK):
+            raise IOError("Can't access input file: %s" % ifile)
+
+    with open(target_file, write_mode) as o_f:
+
+        # Write the header if specified
+        if schema not in (None, ''):
+            o_f.write(header + os.linesep)
+
+        for ifile in input_files:
+            with open(ifile) as i_f:
+                for line in i_f:
+                    o_f.write(line)
+
+    return True
