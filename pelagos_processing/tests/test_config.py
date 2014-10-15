@@ -77,13 +77,13 @@ class TestConfig(unittest.TestCase):
         loaded = config.as_dict(testdata.sample_config)
         self.assertIn('section1', loaded)
         self.assertIsInstance(loaded, dict)
-        self.assertRaises(ValueError, config.from_path, 'not a path--^^')
+        self.assertRaises(IOError, config.from_path, 'not a path--^^')
 
     def test_as_dict_from_configparser(self):
         loaded = config.as_dict(testdata.sample_config)
         self.assertIn('section1', loaded)
         self.assertIsInstance(loaded, dict)
-        self.assertRaises(ValueError, config.from_path, 1.23)  # Not a path or ConfigParser instance
+        self.assertRaises(IOError, config.from_path, 'NOOOOOTHING')  # Not a path or ConfigParser instance
 
     def test_from_dict(self):
         config_dict = {
@@ -95,10 +95,10 @@ class TestConfig(unittest.TestCase):
         loaded = config.from_dict(config_dict)
         self.assertTrue(loaded.has_section('section1'))
         self.assertIsInstance(loaded, ConfigParser)
-        self.assertRaises(ValueError, config.from_path, 'not a dictionary')
+        self.assertRaises(TypeError, config.from_dict, 'not a dictionary')
 
     def test_from_path(self):
         loaded = config.from_path(testdata.sample_config)
         self.assertTrue(loaded.has_section('section1'))
         self.assertIsInstance(loaded, ConfigParser)
-        self.assertRaises(ValueError, config.from_path, '.--asBad_PAA~~~th')
+        self.assertRaises(IOError, config.from_path, '.--asBad_PAA~~~th')

@@ -39,25 +39,26 @@ Pipeline controller
 
 from __future__ import unicode_literals
 
-from os.path import *
+from os.path import abspath, expanduser
 
 from .. import components
 from ..components import *
 from ...controller import *
 from ... import settings
 
-import subcommand_copyoutput
-import subcommand_get
-import subcommand_getconfig
-import subcommand_validate
+from . import subcommand_check
+from . import subcommand_copyoutput
+from . import subcommand_get
+from . import subcommand_getconfig
+from . import subcommand_validate
 
 
 #/* ======================================================================= */#
 #/*     Document level information
 #/* ======================================================================= */#
 
-# TODO: Fix __all__ - when uncommented create exception: TypeError: Item in ``from list'' not a string
-#__all__ = ['print_usage', 'print_help', 'print_long_usage', 'main']
+# TODO: Fix __all__ - when uncommented a "TypeError: Item in ``from list'' not a string" is thrown
+#__all__ = ['print_usage', 'print_help', 'print_long_usage', 'main'] + [unicode(_i) for _i in locals().keys() if 'subcommand_' in _i]
 UTIL_NAME = 'pp-controller.py'
 
 
@@ -241,14 +242,15 @@ def main(args):
     #/*     Call sub-command and exit
     #/* ----------------------------------------------------------------------- */#
 
-    if subcommand_name == 'getconfig':
-        return subcommand_getconfig.main(subcommand_name, configfile, subcommand_args)
-    elif subcommand_name == 'get':
-        return subcommand_get.main(subcommand_name, configfile, subcommand_args)
-    elif subcommand_name == 'validate':
-        return subcommand_validate.main(subcommand_name, configfile, subcommand_args)
-    elif subcommand_name == 'copyoutput':
-        return subcommand_copyoutput.main(subcommand_name, configfile, subcommand_args)
+    # Make sure configfile is actually valid
+    if not config.is_clean(configfile):
+        vprint("ERROR: Problem parsing configfile")
+        return 1
+
+    # Call the subcommand
+    sc = 'subcommand_%s' % subcommand_name
+    if sc in globals():
+        return globals()[sc].main(subcommand_name, configfile, subcommand_args)
     else:
         vprint("ERROR: Invalid sub-command: %s" % subcommand_name)
         return 1
