@@ -50,18 +50,61 @@ RAW_SCHEMA = ['mmsi', 'longitude', 'latitude', 'timestamp', 'score', 'navstat', 
 #/*     Define cat_files() function
 #/* ======================================================================= */#
 
-def cat_files(input_files, target_file, schema=RAW_SCHEMA, write_mode='w'):
+def cat_files(input_files, target_file, schema=RAW_SCHEMA, write_mode='w', skip_lines=0, skip_empty=False):
+
+    """
+    Concatenate a large number of large files
+
+
+    Kwargs
+    ------
+    input_files : list, tuple
+        List of input files to concatenate
+
+    target_file : str, unicode
+        File to concatenate into
+
+    schema : str, list, tuple, None
+        Output file header.  Strings are joined with ','.join(schema).  Use
+        None or '' to skip writing header.
+
+    write_mode : str
+        Mode used in open() to edit output file
+
+    skip_lines : int
+        Number of lines to skip in each input file
+
+    skip_empty : bool
+        Skip empty lines, which are classified as line in ('', os.linesep)
+
+
+    Returns
+    -------
+    True
+        Success
+
+    Raises
+    ------
+    ValueError
+        Invalid argument value
+    TypeError
+        Invalid argument type
+    IOError
+        An input file does not exist or user does not have read access
+    """
 
     # Transform and validate arguments
     write_mode = write_mode.lower()
+    if not isinstance(skip_lines, int) or not skip_lines >= 0:
+        raise ValueError("Invalid skip lines - must be an int >= 0: %s" % skip_lines)
     if isinstance(schema, (list, tuple)):
         header = ','.join(schema)
-    elif isinstance(schema, (str, unicode)):
+    elif isinstance(schema, (str, unicode, None)):
         header = schema
     else:
         raise TypeError("Invalid schema: %s" % schema)
 
-    # Make sure all the
+    # Make sure all the input files actually exist
     for ifile in input_files:
         if not os.access(ifile, os.R_OK):
             raise IOError("Can't access input file: %s" % ifile)
@@ -74,7 +117,11 @@ def cat_files(input_files, target_file, schema=RAW_SCHEMA, write_mode='w'):
 
         for ifile in input_files:
             with open(ifile) as i_f:
+                # Skip lines
+                for sl in range(skip_lines):
+                    i_f.next()
                 for line in i_f:
-                    o_f.write(line)
+                    if not skip_empty and line not in ('', os.linesep):
+                        o_f.write(line)
 
     return True

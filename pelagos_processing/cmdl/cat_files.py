@@ -45,6 +45,7 @@ from os.path import abspath, expanduser, isfile, dirname
 from . import components
 from .components import *
 from ..controller import *
+from ..common import *
 from .. import raw
 
 
@@ -63,17 +64,20 @@ UTIL_NAME = 'catfiles.py'
 def print_usage():
 
     """
-    Command line usage information
+    Print commandline usage information
 
-    :return: 1 for exit code purposes
-    :rtype: int
+
+    Returns:
+
+        1 for exit code purposes
     """
 
     global UTIL_NAME
 
     # TODO: Populate usage
     vprint("""
-{0} [--help-info] [-q] [-s schema] [-m write_mode] ofile ifile [ifile ...]
+{0} [--help-info] [-q] [-sl n] [-s schema] [-se]
+{1} [-m write_mode] ofile ifile [ifile ...]
 
 """.format(UTIL_NAME, " " * len(UTIL_NAME)))
     return 1
@@ -103,6 +107,9 @@ def print_long_usage():
     -s -schema          Output file header as: field1,field2,...
                         To skip writing a schema, use an empty string
                         [default: {0}]
+    -sl -skip-lines     Skip n lines of each input file
+                        [default: 0]
+    -se -skip-empty     Skip concatenating completely empty lines
     ofile               Target file
     ifile               Input file to be concatenated.  See --help for information
                         about getting around the command line's argument limit when
@@ -123,8 +130,10 @@ def print_help():
     """
     Detailed help information
 
-    :return: 1 for exit code purposes
-    :rtype: int
+
+    Returns:
+
+        1 for exit code purposes
     """
 
     global UTIL_NAME
@@ -168,6 +177,8 @@ expansion.
 
     output_schema = raw.RAW_SCHEMA
     write_mode = 'w'
+    skip_lines = 0
+    skip_empty_lines = False
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Containers
@@ -213,6 +224,14 @@ expansion.
             elif arg in ('-s', '-schema', '-header'):
                 i += 2
                 output_schema = args[i - 1]
+
+            # Skip lines in input files
+            elif arg in ('-sl', '-skip-lines'):
+                i += 2
+                skip_lines = string2type(args[i - 1])
+            elif arg in ('-se', '-skip-empty'):
+                i += 1
+                skip_empty_lines = True
 
             # Additional options
             elif arg in ('-m', '-mode'):
@@ -276,7 +295,8 @@ expansion.
     #/*     Validate parameters
     #/* ----------------------------------------------------------------------- */#
 
-    # Make sure the list of input files is unique
+    # To be safe, force list of input files to be unique
+    # TODO: Determine if this is an unecessary waste of time
     input_files = list(set(input_files))
 
     bail = False
@@ -314,13 +334,19 @@ expansion.
     #/*     Process files
     #/* ----------------------------------------------------------------------- */#
 
+    # To prevent confusing the user, make default schema formatted the same as user input schema
+    # The cat_files() function can handle either input
+    if isinstance(output_schema, (list, tuple)):
+        output_schema = ','.join(output_schema)
+
     vprint("Output file: %s" % output_file)
     vprint("Write mode: %s" % write_mode)
     vprint("Schema: %s" % output_schema)
     vprint("Concatenating %s files ..." % len(input_files))
 
     try:
-        if not raw.cat_files(input_files, output_file, schema=output_schema, write_mode=write_mode):
+        if not raw.cat_files(input_files, output_file, schema=output_schema, write_mode=write_mode,
+                             skip_lines=skip_lines, skip_empty=skip_empty_lines):
             vprint("ERROR: Did not successfully concatenate files")
             return 1
     except Exception as e:

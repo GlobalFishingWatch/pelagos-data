@@ -34,6 +34,8 @@ Unittests for pelagos_processing.raw
 """
 
 
+from __future__ import unicode_literals
+
 import os
 from os.path import isfile
 import unittest
@@ -52,6 +54,7 @@ class DevNull(object):
 class TestCatFiles(unittest.TestCase):
 
     def setUp(self):
+        self.input_files = (testdata.cat1, testdata.cat2, testdata.cat3, testdata.cat4)
         self.test_file = '.TestCatFiles_standard--a--.csv.ext'
         if isfile(self.test_file):
             os.remove(self.test_file)
@@ -62,14 +65,37 @@ class TestCatFiles(unittest.TestCase):
 
     def test_standard(self):
 
-        input_files = (testdata.cat1, testdata.cat2, testdata.cat3, testdata.cat4)
         schema = ['uid', 'val']
         expected = ','.join(schema) + os.linesep
-        for ifile in input_files:
+        for ifile in self.input_files:
             with open(ifile) as f:
-                expected += f.read()
+                for line in f:
+                    expected += line
 
-        self.assertTrue(raw.cat_files(input_files, self.test_file, schema=schema, write_mode='w'))
+        self.assertTrue(raw.cat_files(self.input_files, self.test_file, schema=schema, write_mode='w'))
         with open(self.test_file) as f:
             actual = f.read()
         self.assertEqual(expected, actual)
+
+    def test_skipline(self):
+
+        skip = 1
+        schema = 'uid,val'
+        expected = schema + os.linesep
+        for ifile in self.input_files:
+            with open(ifile) as f:
+                for sl in range(skip):
+                    f.next()
+                for line in f:
+                    expected += line
+
+        self.assertTrue(raw.cat_files(self.input_files, self.test_file, schema=schema, write_mode='w', skip_lines=skip))
+        with open(self.test_file) as f:
+            actual = f.read()
+        self.assertEqual(expected, actual)
+
+    def test_exceptions(self):
+        self.assertRaises(ValueError, raw.cat_files, *[self.input_files, self.test_file], **{'skip_lines': -1})
+        self.assertRaises(ValueError, raw.cat_files, *[self.input_files, self.test_file], **{'skip_lines': None})
+        self.assertRaises(TypeError, raw.cat_files, *[self.input_files, self.test_file], **{'schema': 1.23})
+        self.assertRaises(IOError, raw.cat_files, *[['I-DO_NOT_|EXIST'], self.test_file])
