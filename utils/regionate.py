@@ -42,11 +42,11 @@ Usage:
 
 Options:
   --attribute=ATTRIB    Attribute in the polygon layer containing the regionid [default: regionid]
-  --layername=LAYERNAME     Name of the polygon layer to use.  Default is to use the first layer found
+  --layername=LAYERNAME     Name of the polygon layer to use.  Default is to use the all layers
   --xfield=XFIELD       Name of input field containing x value [default: longitude]
   --yfield=YFIELD       Name of input field containing x value [default: latitude]
   --regionid-map=DEFINITION    LAYER=FIELD,FIELD,...:LAYER=FIELD:...
-  --regionid-mode=MODE  (update|append) Specify whether regionid's should be appended or updated [default: update]
+  --regionid-mode=MODE  (update|append) Specify whether regionid's should be appended or updated [default: append]
   -h --help     Show this screen.
   --version     Show version.
   -q --quiet    be quiet
