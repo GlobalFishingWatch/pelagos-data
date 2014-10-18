@@ -191,6 +191,12 @@ def regionate(file_in, file_out, arg):
                     raise ValueError("Invalid --regionid-mode: %s" % arg['--regionid-mode'])
 
         # Dump to disk
+
+        # HACK for special "ocean" field.  Need to make a way in the regionid-map definition that you can
+        # specify whether the field is output as a list or as a string
+
+        row_out['ocean'] = ','.join(row_out.get('ocean',[]))
+
         file_out.write(json.dumps(row_out, sort_keys=True))
         file_out.write('\n')
 

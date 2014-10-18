@@ -14,5 +14,5 @@
     {"type":"INTEGER","name":"type"},
     {"type":"STRING","name":"next_gridcode"},
     {"type":"STRING","name":"region","mode":"REPEATED"},
-    {"type":"STRING","name":"ocean","mode":"REPEATED"}
+    {"type":"STRING","name":"ocean"}
 ]
