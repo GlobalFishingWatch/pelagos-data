@@ -196,18 +196,28 @@ class NewlineJSONReader(object):
     """
 
     def __init__(self, f, fieldnames=None, delimiter=os.linesep):
+
         self.f = f
         self.delimiter = delimiter
         self.fieldnames = fieldnames
+        self._first_line = None
+
+        # In order to allow collecting fieldnames from stdin, the first row must be cached, parsed for fieldnames,
+        # and returned later when iterated
         if self.fieldnames is None:
-            self.fieldnames = json.loads(self.f.readline().replace(self.delimiter, '')).keys()
-            self.f.seek(0)
+            self._first_line = self.f.readline()
+            self.fieldnames = json.loads(self._first_line.replace(self.delimiter, '')).keys()
 
     def __iter__(self):
         return self
 
     def next(self):
-        return json.loads(self.f.readline().replace(self.delimiter, ''))
+        if self._first_line:
+            line = self._first_line
+            self._first_line = None
+        else:
+            line = self.f.readline()
+        return json.loads(line.replace(self.delimiter, ''))
 
     def seek(self, val):
         return self.f.seek(val)
@@ -508,7 +518,7 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
     if not quiet_mode:
         print("Input file:  %s" % input_file)
         print("Output file: %s" % output_file)
-        print("Schema: %s" % ','.join(input_schema) if isinstance(input_schema, (list, tuple)) else input_schema)
+        print("Schema: %s" % (','.join(input_schema) if isinstance(input_schema, (list, tuple)) else input_schema))
 
     # Get line count, which is only used when writing to a file and NOT for stdout
     prog_total = 0
