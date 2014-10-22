@@ -106,6 +106,8 @@ def print_long_usage():
         1 for exit code purposes
     """
 
+    global UTIL_NAME
+
     print_usage()
     print("""Options:
     infile -                    Input file for processing or '-' for stdin
@@ -113,7 +115,7 @@ def print_long_usage():
     -q -quiet                   Suppress user output
     -th -time-threshold         Number of seconds allowed between points before
                                 they are flagged as potentially discontinuous
-                                [default: 3600]
+                                [default: 259200]
     -dh -distance-threshold     Number of georeferenced distance units allowed
                                 between points before they are flagged as
                                 discontinuous.  Default assumes input is in degrees.
@@ -145,7 +147,14 @@ def print_long_usage():
                                     frequency = CSV containing MMSI's exhibiting
                                         discontinuity and the total number of
                                         offending points
-    """)
+                                    flag-* = Write all input rows but flag those
+                                        exhibiting discontinuity.  New output
+                                        field is {0}
+                                    flag-csv = Flag output is CSV
+                                    flag-csv-no-schema = Flag output is CSV
+                                        without schema
+                                    flag-newline = Flag output is newline delimited JSON
+    """.format(UTIL_NAME))
 
     return 1
 
@@ -235,6 +244,28 @@ class NewlineJSONWriter(object):
 
 
 #/* ======================================================================= */#
+#/*     Define is_discontinuous() function
+#/* ======================================================================= */#
+
+def is_discontinuous(row, last_row, a_srs=None, tt=None, dt=None):
+
+    last_timestamp = datetime.fromtimestamp(int(last_row['timestamp']))
+    process_timestamp = datetime.fromtimestamp(int(row['timestamp']))
+    td = process_timestamp - last_timestamp
+
+    if not td.seconds <= tt:
+        return False
+    else:
+        last_point = ogr.CreateGeometryFromWkt('POINT (%s %s)' % (last_row['longitude'], last_row['latitude']))
+        last_point.AssignSpatialReference(a_srs)
+        process_point = ogr.CreateGeometryFromWkt('POINT (%s %s)' % (row['longitude'], row['latitude']))
+        process_point.AssignSpatialReference(a_srs)
+
+        # Check distance
+        return last_point.Distance(process_point) >= dt
+
+
+#/* ======================================================================= */#
 #/*     Define main() function
 #/* ======================================================================= */#
 
@@ -248,6 +279,8 @@ points is calculated.  If the distance is greater than the threshold set by
  
 Currently the output file is just a count of MMSI's and number of discontinuous points
     """
+
+    global UTIL_NAME
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Print usage
@@ -264,7 +297,7 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
     skip_lines = 0
     overwrite_mode = False
     assign_srs_from_cmdl = 'EPSG:4326'
-    time_threshold = 3600
+    time_threshold = 269200
     distance_threshold = 1
     quiet_mode = False
     output_product = 'csv'
@@ -277,7 +310,7 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
     input_file = None
     output_file = None
     input_schema = None
-    valid_output_products = ('frequency', 'csv', 'csv-no-schema', 'newline', 'json')
+    valid_output_products = ('frequency', 'csv', 'csv-no-schema', 'newline', 'flag-csv', 'flag-no-schema', 'flag-newline')
     valid_input_file_formats = ('csv', 'newline', 'json')
 
     #/* ----------------------------------------------------------------------- */#
@@ -414,6 +447,7 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
         assign_srs = osr.SpatialReference()
         assign_srs.SetFromUserInput(str(assign_srs_from_cmdl))
     except RuntimeError:
+        assign_srs = None
         bail = True
         print("Invalid assign SRS: '%s'" % assign_srs_from_cmdl)
 
@@ -492,6 +526,9 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
     #/*     Process data
     #/* ----------------------------------------------------------------------- */#
 
+    flag_field = UTIL_NAME
+    flag_val = 1
+
     # Open input file or stdin
     with sys.stdin if input_file == '-' else open(input_file) as i_f:
 
@@ -515,23 +552,28 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
             else:
                 raise IOError("Could not determine input file format - valid formats are newline delimited JSON and CSV")
 
+            # Make sure the writer has the flag field if necessary
+            if 'flag' in output_product:
+                writer_fieldnames = reader.fieldnames + [flag_field]
+            else:
+                writer_fieldnames = reader.fieldnames
+
             # Construct a writer for the output product
-            if output_product in ('csv', 'csv-no-schema'):
-                writer = csv.DictWriter(o_f, reader.fieldnames)
-                if output_product == 'csv':
-                    writer.writeheader()
-            elif output_product == 'newline':
-                writer = NewlineJSONWriter(o_f, reader.fieldnames)
-            elif output_product == 'frequency':
+            if output_product == 'frequency':
                 # The 'frequency' writer is established later once all data is collected
                 pass
+            elif 'csv' in output_product:
+                writer = csv.DictWriter(o_f, writer_fieldnames)
+                if output_product in ('csv', 'flag-csv'):
+                    writer.writeheader()
+            elif 'newline' in output_product:
+                writer = NewlineJSONWriter(o_f, writer_fieldnames)
             else:
                 raise IOError("Invalid output product: '%s'" % output_product)
 
             # Loop over input file
             discontinuity_counts = {}
             last_row = None
-            # TODO: Make sure this logic doesn't skip any rows
             for prog_i, row in enumerate(reader):
 
                 # Only process rows once the proper number of lines has been skipped
@@ -551,31 +593,33 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
                         print(last_row)
                         return 1
 
-                    # Check to make sure the MMSI or file has at least 2 points
-                    if last_row is not None:
+                    # If flagging output, make sure all rows contain the field
+                    if 'flag' in output_product:
+                        row[flag_field] = ''
 
-                        # The time check is less expensive than the distance check
-                        last_timestamp = datetime.fromtimestamp(int(last_row['timestamp']))
-                        process_timestamp = datetime.fromtimestamp(int(row['timestamp']))
-                        td = process_timestamp - last_timestamp
-                        if td.seconds <= time_threshold:  # 72 hours
+                    # Normal processing
+                    if last_row is not None and is_discontinuous(row, last_row, tt=time_threshold,
+                                                                 dt=distance_threshold, a_srs=assign_srs):
 
-                            # Load OGR objects
-                            last_point = ogr.CreateGeometryFromWkt('POINT (%s %s)' % (last_row['longitude'], last_row['latitude']))
-                            last_point.AssignSpatialReference(assign_srs)
-                            process_point = ogr.CreateGeometryFromWkt('POINT (%s %s)' % (row['longitude'], row['latitude']))
-                            process_point.AssignSpatialReference(assign_srs)
+                        # Flag output
+                        if 'flag' in output_product:
+                            row[flag_field] = flag_val
 
-                            # Check distance
-                            if last_point.Distance(process_point) >= distance_threshold:
+                        # Collect frequency counts
+                        if output_product == 'frequency':
+                            if row['mmsi'] not in discontinuity_counts:
+                                discontinuity_counts[row['mmsi']] = 1
+                            else:
+                                discontinuity_counts[row['mmsi']] += 1
 
-                                if output_product == 'frequency':
-                                    if row['mmsi'] not in discontinuity_counts:
-                                        discontinuity_counts[row['mmsi']] = 1
-                                    else:
-                                        discontinuity_counts[row['mmsi']] += 1
-                                else:
-                                    writer.writerow(row)
+                        # Write discontinous row
+                        else:
+                            writer.writerow(row)
+
+                    # Make sure all rows are written when flagging output
+                    # This also catches MMSi's containing only a single point AND the firs row of every MMSI
+                    elif 'flag' in output_product:
+                        writer.writerow(row)
 
                     # Mark the row just processed as the last row in preparation for processing the next row
                     last_row = row.copy()
