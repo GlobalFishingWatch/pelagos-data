@@ -1,0 +1,4 @@
+
+bq -q  --format=csv query -n 10000  "select mmsi, latitude, longitude, timestamp, score, cog, sog from [Global_20k_2012.raw_1_3] where mmsi=441864000 limit 10000" | ./csv2kml.py - 441864000-2012.kml
+
+
