@@ -84,7 +84,7 @@ def print_usage():
 
     # TODO: Populate usage
     print("""
-{0} [-q] [-th seconds] [-dh distance] [-s schema] [-wm mode]
+{0} [-q] [-tt seconds] [-dt distance] [-s schema] [-wm w|a]
 {1} [-op csv|csv-no-schema|newline|frequency] [-sl num_lines]
 {1} [-overwrite] [-a-srs srs_def] infile outfile
 """.format(UTIL_NAME, " " * len(UTIL_NAME)))
@@ -177,31 +177,61 @@ Help: {0}
 
 
 #/* ======================================================================= */#
-#/*     Define NewlineJSONDictReader() class
+#/*     Define NewlineJSONReader() class
 #/* ======================================================================= */#
 
-class NewlineJSONDictReader(object):
+class NewlineJSONReader(object):
 
     """
     Allow newline delimited JSON to be read similarly to csv.DictReader
     """
 
-    def __init__(self, open_file_object, fieldnames=None, delimiter=os.linesep):
-        self.infile = open_file_object
+    def __init__(self, f, fieldnames=None, delimiter=os.linesep):
+        self.f = f
         self.delimiter = delimiter
         self.fieldnames = fieldnames
         if self.fieldnames is None:
-            self.fieldnames = json.loads(self.infile.readline().replace(self.delimiter, '')).keys()
-            self.infile.seek(0)
+            self.fieldnames = json.loads(self.f.readline().replace(self.delimiter, '')).keys()
+            self.f.seek(0)
 
     def __iter__(self):
         return self
 
     def next(self):
-        return json.loads(self.infile.readline().replace(self.delimiter, ''))
+        return json.loads(self.f.readline().replace(self.delimiter, ''))
 
     def seek(self, val):
-        return self.infile.seek(val)
+        return self.f.seek(val)
+
+    def close(self):
+        self.f.close()
+
+
+#/* ======================================================================= */#
+#/*     Define NewlineJSONWriter() class
+#/* ======================================================================= */#
+
+class NewlineJSONWriter(object):
+
+    """
+    Allow newline delimited JSON to be written similarly to csv.DictWriter
+    """
+
+    def __init__(self, f, fieldnames=None, delimiter=os.linesep):
+        self.f = f
+        self.delimiter = delimiter
+        self.fieldnames = fieldnames
+
+    def writerow(self, row):
+        if self.fieldnames:
+            row = {k: v for k, v in row.iteritems() if k in self.fieldnames}
+        self.f.write(json.dumps(row) + os.linesep)
+
+    def write(self, row):
+        self.writerow(row)
+
+    def close(self):
+        self.f.close()
 
 
 #/* ======================================================================= */#
@@ -238,7 +268,7 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
     distance_threshold = 1
     quiet_mode = False
     output_product = 'csv'
-    input_file_format = 'csv'
+    input_file_format = None
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Containers
@@ -247,8 +277,8 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
     input_file = None
     output_file = None
     input_schema = None
-    valid_output_products = ('frequency', 'csv', 'csv-no-schema', 'newline')
-    valid_input_file_formats = ('csv', 'newline')
+    valid_output_products = ('frequency', 'csv', 'csv-no-schema', 'newline', 'json')
+    valid_input_file_formats = ('csv', 'newline', 'json')
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Parse arguments
@@ -271,17 +301,17 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
                 return print_long_usage()
 
             # Algorithm settings
-            elif arg in ('-th', '-time-threshold'):
+            elif arg in ('-tt', '-time-threshold'):
                 i += 2
                 time_threshold = int(args[i - 1])
-            elif arg in ('-dh', '-distance-threshold'):
+            elif arg in ('-dt', '-distance-threshold'):
                 i += 2
                 distance_threshold = int(args[i - 1])
 
             # Define the output schema
             elif arg in ('-s', '-schema', '-header'):
                 i += 2
-                input_schema = args[i - 1]
+                input_schema = args[i - 1].split(',')
 
             # Skip lines in input file
             elif arg in ('-sl', '-skip-lines'):
@@ -361,6 +391,14 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
             print("ERROR: An argument has invalid parameters: %s" % arg)
 
     #/* ----------------------------------------------------------------------- */#
+    #/*     Transform arguments
+    #/* ----------------------------------------------------------------------- */#
+
+    # Attempt to sniff file type
+    if not input_file_format and input_file != '-':
+        input_file_format = input_file.rsplit('.')[-1]
+
+    #/* ----------------------------------------------------------------------- */#
     #/*     Validate parameters
     #/* ----------------------------------------------------------------------- */#
 
@@ -377,26 +415,26 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
         assign_srs.SetFromUserInput(str(assign_srs_from_cmdl))
     except RuntimeError:
         bail = True
-        print("Invalid assign SRS: %s" % assign_srs_from_cmdl)
+        print("Invalid assign SRS: '%s'" % assign_srs_from_cmdl)
 
     # Check algorithm options
     if not 0 <= time_threshold:
         bail = True
-        print("ERROR: Invalid time threshold - must be >= 0: %s" % time_threshold)
+        print("ERROR: Invalid time threshold - must be >= 0: '%s'" % time_threshold)
     if not 0 <= distance_threshold:
         bail = True
-        print("ERROR: Invalid distance threshold - must be >= 0: %s" % distance_threshold)
+        print("ERROR: Invalid distance threshold - must be >= 0: '%s'" % distance_threshold)
 
     # Check output product options
     if output_product not in valid_output_products:
         bail = True
-        print("ERROR: Invalid output product: %s" % output_product)
+        print("ERROR: Invalid output product: '%s'" % output_product)
         print("       Options: %s" % ', '.join(valid_output_products))
     
     # Check input file format
     if input_file_format not in valid_input_file_formats:
         bail = True
-        print("ERROR: Invalid input file format: %s" % input_file_format)
+        print("ERROR: Invalid input file format: '%s'" % input_file_format)
         print("       Options: %s" % ', '.join(valid_input_file_formats))
         
     # Check input files
@@ -405,7 +443,7 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
         print("ERROR: Need an input file")
     elif input_file != '-' and not os.access(input_file, os.R_OK):
         bail = True
-        print("ERROR: Can't access input file: %s" % input_file)
+        print("ERROR: Can't access input file: '%s'" % input_file)
 
     # Check output file
     if output_file is None:
@@ -413,13 +451,13 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
         print("ERROR: Need an output file")
     elif output_file != '-' and not overwrite_mode and isfile(output_file):
         bail = True
-        print("ERROR: Overwrite=%s but output file exists: %s" % (overwrite_mode, output_file))
+        print("ERROR: Overwrite=%s but output file exists: '%s'" % (overwrite_mode, output_file))
     elif output_file != '-' and isfile(output_file) and not os.access(output_file, os.W_OK):
         bail = True
-        print("ERROR: Need write access for output file: %s" % output_file)
+        print("ERROR: Need write access for output file: '%s'" % output_file)
     elif output_file != '-' and not isfile(output_file) and not os.access(dirname(output_file), os.W_OK):
         bail = True
-        print("ERROR: Need write access for output dir: %s" % dirname(output_file))
+        print("ERROR: Need write access for output dir: '%s'" % dirname(output_file))
 
     # Exit if something did not pass validation
     if bail:
@@ -433,15 +471,10 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
     if output_file == '-':
         quiet_mode = True
 
-    # To prevent confusing the user, make default schema formatted the same as user input schema
-    # The cat_files() function can handle either input
-    if isinstance(input_schema, (list, tuple)):
-        input_schema = ','.join(input_schema)
-
     if not quiet_mode:
         print("Input file:  %s" % input_file)
         print("Output file: %s" % output_file)
-        print("Schema: %s" % input_schema)
+        print("Schema: %s" % ','.join(input_schema) if isinstance(input_schema, (list, tuple)) else input_schema)
 
     # Get line count, which is only used when writing to a file and NOT for stdout
     prog_total = 0
@@ -465,9 +498,14 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
         # Open output file or stdin
         with sys.stdout if output_file == '-' else open(output_file, write_mode) as o_f:
 
+            # Construct a reader
             if input_file_format == 'json':
-                reader = NewlineJSONDictReader(i_f)
-                fieldnames = reader.fieldnames
+                try:
+                    reader = NewlineJSONReader(i_f)
+                    fieldnames = reader.fieldnames
+                except ValueError:
+                    print("ERROR: Input file format is '%s' but could not be decoded" % input_file_format)
+                    return 1
             elif input_file_format == 'csv':
                 if input_schema:
                     reader = csv.DictReader(i_f, fieldnames=input_schema)
@@ -477,10 +515,18 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
             else:
                 raise IOError("Could not determine input file format - valid formats are newline delimited JSON and CSV")
 
-            # Output product
-            # Write the schema if necessary
-            if output_product == 'csv':
-                o_f.write(','.join(fieldnames) + os.linesep)
+            # Construct a writer for the output product
+            if output_product in ('csv', 'csv-no-schema'):
+                writer = csv.DictWriter(o_f, reader.fieldnames)
+                if output_product == 'csv':
+                    writer.writeheader()
+            elif output_product == 'newline':
+                writer = NewlineJSONWriter(o_f, reader.fieldnames)
+            elif output_product == 'frequency':
+                # The 'frequency' writer is established later once all data is collected
+                pass
+            else:
+                raise IOError("Invalid output product: '%s'" % output_product)
 
             # Loop over input file
             discontinuity_counts = {}
@@ -488,50 +534,51 @@ Currently the output file is just a count of MMSI's and number of discontinuous 
             # TODO: Make sure this logic doesn't skip any rows
             for prog_i, row in enumerate(reader):
 
-                # Update user, but NOT if writing to stdout
-                if not quiet_mode and output_file != '-':
-                    sys.stdout.write("\r\x1b[K" + "    %s/%s" % (prog_i, prog_total))
-                    sys.stdout.flush()
+                # Only process rows once the proper number of lines has been skipped
+                if prog_i >= skip_lines:
 
-                # Compare MMSI values - if they don't match then re-set the last row to start processing the new MMSI
-                try:
-                    if last_row and row['mmsi'] != last_row['mmsi']:
-                        last_row = None
-                except KeyError:
-                    print(row)
-                    print(last_row)
-                    return 1
+                    # Update user, but NOT if writing to stdout
+                    if not quiet_mode and output_file != '-':
+                        sys.stdout.write("\r\x1b[K" + "    %s/%s" % (prog_i, prog_total))
+                        sys.stdout.flush()
 
-                # Check to make sure the MMSI or file has at least 2 points
-                if last_row is not None:
+                    # Compare MMSI values - if they don't match then re-set the last row to start processing the new MMSI
+                    try:
+                        if last_row and row['mmsi'] != last_row['mmsi']:
+                            last_row = None
+                    except KeyError:
+                        print(row)
+                        print(last_row)
+                        return 1
 
-                    # The time check is less expensive than the distance check
-                    last_timestamp = datetime.fromtimestamp(int(last_row['timestamp']))
-                    process_timestamp = datetime.fromtimestamp(int(row['timestamp']))
-                    td = process_timestamp - last_timestamp
-                    if td.seconds <= time_threshold:  # 72 hours
+                    # Check to make sure the MMSI or file has at least 2 points
+                    if last_row is not None:
 
-                        # Load OGR objects
-                        last_point = ogr.CreateGeometryFromWkt('POINT (%s %s)' % (last_row['longitude'], last_row['latitude']))
-                        last_point.AssignSpatialReference(assign_srs)
-                        process_point = ogr.CreateGeometryFromWkt('POINT (%s %s)' % (row['longitude'], row['latitude']))
-                        process_point.AssignSpatialReference(assign_srs)
+                        # The time check is less expensive than the distance check
+                        last_timestamp = datetime.fromtimestamp(int(last_row['timestamp']))
+                        process_timestamp = datetime.fromtimestamp(int(row['timestamp']))
+                        td = process_timestamp - last_timestamp
+                        if td.seconds <= time_threshold:  # 72 hours
 
-                        # Check distance
-                        if last_point.Distance(process_point) >= distance_threshold:
+                            # Load OGR objects
+                            last_point = ogr.CreateGeometryFromWkt('POINT (%s %s)' % (last_row['longitude'], last_row['latitude']))
+                            last_point.AssignSpatialReference(assign_srs)
+                            process_point = ogr.CreateGeometryFromWkt('POINT (%s %s)' % (row['longitude'], row['latitude']))
+                            process_point.AssignSpatialReference(assign_srs)
 
-                            if output_product in ('csv', 'csv-no-schema'):
-                                o_f.write(','.join(row[_k] for _k in fieldnames) + os.linesep)
-                            elif output_product == 'newline':
-                                o_f.write(json.dumps(row) + os.linesep)
-                            elif output_product == 'frequency':
-                                if row['mmsi'] not in discontinuity_counts:
-                                    discontinuity_counts[row['mmsi']] = 1
+                            # Check distance
+                            if last_point.Distance(process_point) >= distance_threshold:
+
+                                if output_product == 'frequency':
+                                    if row['mmsi'] not in discontinuity_counts:
+                                        discontinuity_counts[row['mmsi']] = 1
+                                    else:
+                                        discontinuity_counts[row['mmsi']] += 1
                                 else:
-                                    discontinuity_counts[row['mmsi']] += 1
+                                    writer.writerow(row)
 
-                # Mark the row just processed as the last row in preparation for processing the next row
-                last_row = row.copy()
+                    # Mark the row just processed as the last row in preparation for processing the next row
+                    last_row = row.copy()
 
             #/* ----------------------------------------------------------------------- */#
             #/*     Dump results if output product is 'frequency'
