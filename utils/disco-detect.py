@@ -82,7 +82,6 @@ def print_usage():
 
     global UTIL_NAME
 
-    # TODO: Populate usage
     print("""
 {0} [-q] [-tt seconds] [-dt distance] [-s schema] [-wm w|a]
 {1} [-op csv|csv-no-schema|newline|frequency] [-sl num_lines]
@@ -176,7 +175,6 @@ def print_help():
 
     global UTIL_NAME
 
-    # TODO: Populate help
     print("""
 Help: {0}
 ------{1}
@@ -257,22 +255,23 @@ class NewlineJSONWriter(object):
 #/*     Define is_discontinuous() function
 #/* ======================================================================= */#
 
-def is_discontinuous(row, last_row, a_srs=None, tt=None, dt=None):
+def is_discontinuous(row, last_row, a_srs=None, tt=None, dt=None, st=None):
 
     last_timestamp = datetime.fromtimestamp(int(last_row['timestamp']))
     process_timestamp = datetime.fromtimestamp(int(row['timestamp']))
-    td = process_timestamp - last_timestamp
+    time_delta = process_timestamp - last_timestamp
 
-    if not td.seconds <= tt:
+    if not time_delta.seconds <= tt:
         return False
     else:
         last_point = ogr.CreateGeometryFromWkt('POINT (%s %s)' % (last_row['longitude'], last_row['latitude']))
         last_point.AssignSpatialReference(a_srs)
         process_point = ogr.CreateGeometryFromWkt('POINT (%s %s)' % (row['longitude'], row['latitude']))
         process_point.AssignSpatialReference(a_srs)
+        distance = last_point.Distance(process_point)
 
         # Check distance
-        return last_point.Distance(process_point) >= dt
+        return distance >= dt and distance / time_delta >= st
 
 
 #/* ======================================================================= */#
