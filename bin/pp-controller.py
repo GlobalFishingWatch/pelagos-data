@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+
 # This document is part of pelagos-data
 # https://github.com/skytruth/pelagos-data
 
@@ -29,20 +32,27 @@
 # =========================================================================== #
 
 
-language: python
+"""
+Interact with a Pelagos pipeline configfile
 
-python:
-  - "2.7"
+See pelagos_processing.cmdl.pp_controller for more information
+"""
 
-before_install:
-  - ./gce/build-gdal.sh
-  - ./gce/test-geos.py
 
-install:
-  - "pip install -r requirements.txt"
-  - "pip install ."
+from __future__ import unicode_literals
 
-script: "nosetests"
+import sys
 
-notifications:
-  flowdock: d155ceb5c276d1065a2e6be5b057da84
+# Convenience imports
+from pelagos_processing.cmdl.components import *
+from pelagos_processing.cmdl.pp_controller import *
+
+
+#/* ======================================================================= */#
+#/*     Command line execution
+#/* ======================================================================= */#
+
+if __name__ == '__main__':
+
+    # Remove script name and give the rest to main
+    sys.exit(main(sys.argv[1:]))

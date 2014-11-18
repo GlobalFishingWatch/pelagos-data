@@ -42,8 +42,8 @@ import os
 from os.path import *
 import sys
 
-import common
-from common import *
+import components
+from components import *
 
 try:
     from osgeo import ogr
@@ -60,7 +60,7 @@ osr.UseExceptions()
 #/* ======================================================================= */#
 
 __all__ = ['print_usage', 'print_help', 'print_long_usage', 'main']
-__docname__ = basename(inspect.getfile(inspect.currentframe()))
+UTIL_NAME = 'gridify.py'
 
 
 #/* ======================================================================= */#
@@ -75,13 +75,16 @@ def print_usage():
     :return: 1 for exit code purposes
     :rtype: int
     """
+    
+    global UTIL_NAME
+    
     # TODO: Populate usage
     vprint("""
 Usage:
     {0} [-of ogr_driver] [-lco option=value] [-dsco option=value]
     {1} [-gl layer_name|layer1,layer2,...] [-rl layer_name|layer1,layer2]
     {1} --grid=grid_file.ext --region=region_file.ext -o output_file.ext
-""".format(__docname__, " " * len(__docname__)))
+""".format(UTIL_NAME, " " * len(UTIL_NAME)))
     return 1
 
 
@@ -102,7 +105,7 @@ def print_help():
 Help: {0}
 ------{1}
 {2}
-    """.format(__docname__, '-' * len(__docname__), main.__doc__))
+    """.format(UTIL_NAME, '-' * len(UTIL_NAME), main.__doc__))
 
     return 1
 
@@ -240,7 +243,7 @@ def main(args):
             # User feedback
             elif arg in ('-q', '-quiet'):
                 i += 1
-                common.VERBOSE_MODE = False
+                components.VERBOSE_MODE = False
 
             # Specify input files
             elif arg in ('-g', '-grid'):

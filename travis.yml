@@ -29,17 +29,20 @@
 # =========================================================================== #
 
 
-"""
-PelagosProcessing - Data tools for the Pelagos projects
-"""
+language: python
 
+python:
+  - "2.7"
 
-import ais
-import common
-import grid
-import region
-from settings import __version__, __release__, __author__, __license__, __author_email__, __source__
-import utils
-import tests
-import vessel
+#before_install:
+#  - ./gce/build-gdal.sh
+#  - ./gce/test-geos.py
 
+install:
+  - "pip install -r requirements.txt"
+  - "pip install ."
+
+script: "nosetests"
+
+notifications:
+  flowdock: d155ceb5c276d1065a2e6be5b057da84

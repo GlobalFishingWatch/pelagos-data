@@ -1,5 +1,5 @@
-# This document is part of pelagos-data
-# https://github.com/skytruth/pelagos-data
+# This document is part of VesselInfo
+# https://github.com/skytruth/VesselInfo
 
 
 # =========================================================================== #
@@ -30,9 +30,8 @@
 
 
 """
-Components for commandline utilities
+Unittests for pelagos_processing.cmdl
 """
 
 
-import common
-import gridify
+from . import test_process_ais

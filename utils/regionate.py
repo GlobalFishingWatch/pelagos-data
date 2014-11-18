@@ -42,11 +42,11 @@ Usage:
 
 Options:
   --attribute=ATTRIB    Attribute in the polygon layer containing the regionid [default: regionid]
-  --layername=LAYERNAME     Name of the polygon layer to use.  Default is to use the all layers
+  --layername=LAYERNAME     Name of the polygon layer to use.  Default is to use the first layer found
   --xfield=XFIELD       Name of input field containing x value [default: longitude]
   --yfield=YFIELD       Name of input field containing x value [default: latitude]
   --regionid-map=DEFINITION    LAYER=FIELD,FIELD,...:LAYER=FIELD:...
-  --regionid-mode=MODE  (update|append) Specify whether regionid's should be appended or updated [default: append]
+  --regionid-mode=MODE  (update|append) Specify whether regionid's should be appended or updated [default: update]
   -h --help     Show this screen.
   --version     Show version.
   -q --quiet    be quiet
@@ -143,15 +143,13 @@ def regionate(file_in, file_out, arg):
             while feature:
 
                 if feature.GetGeometryRef().Intersects(point):
-                    value = feature.GetField(arg['--attribute'])
-                    if value is not None:
-                        value = value.split(',')
+                    value = feature.GetField(arg['--attribute']).split(',')
 
-                        # Add regionid
-                        if layer.GetName() not in regionids:
-                            regionids[layer.GetName()] = value
-                        else:
-                            regionids[layer.GetName()] += value
+                    # Add regionid
+                    if layer.GetName() not in regionids:
+                        regionids[layer.GetName()] = value
+                    else:
+                        regionids[layer.GetName()] += value
 
                 feature = layer.GetNextFeature()
 
@@ -191,12 +189,6 @@ def regionate(file_in, file_out, arg):
                     raise ValueError("Invalid --regionid-mode: %s" % arg['--regionid-mode'])
 
         # Dump to disk
-
-        # HACK for special "ocean" field.  Need to make a way in the regionid-map definition that you can
-        # specify whether the field is output as a list or as a string
-
-        row_out['ocean'] = ','.join(row_out.get('ocean',[]))
-
         file_out.write(json.dumps(row_out, sort_keys=True))
         file_out.write('\n')
 

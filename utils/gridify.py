@@ -101,7 +101,7 @@ def print_usage():
     # TODO: Populate usage
     print("""
 Usage:
-    {0} [-of ogr_driver] [-lco option=value] [-dsco option=value]
+    {0} [-of ogr_driver] [-lco option=value] [-dsco option=value] [-cfn]
     {1} [-gl layer_name|layer1,layer2,...] [-rl layer_name|layer1,layer2]
     {1} -g grid_file.ext -r region_file.ext -o output_file.ext
 """.format(__docname__, " " * len(__docname__)))
@@ -249,6 +249,7 @@ def main(args):
 
     output_driver_name = "ESRI Shapefile"
     processing_algorithm = 'combined'
+    check_field_names = False
 
     #/* ----------------------------------------------------------------------- */#
     #/*     Containers
@@ -317,6 +318,11 @@ def main(args):
             elif arg in ('-dsco', '-ds-creation-option'):
                 i += 2
                 output_dsco.append(args[i - 1])
+
+            # Additional options
+            elif arg in ('-cfn', '-check-field-names'):
+                i += 1
+                check_field_names = True
 
             # Positional arguments and errors
             else:
@@ -511,11 +517,12 @@ def main(args):
             region_layer_srs = region_layer.GetSpatialRef()
 
             # Check for duplicate fields
-            bail = False
-            for r_field in region_layer_fields:
-                if r_field in grid_layer_fields:
-                    bail = True
-                    print("ERROR: Duplicate field: %s" % r_field)
+            if check_field_names:
+                bail = False
+                for r_field in region_layer_fields:
+                    if r_field in grid_layer_fields:
+                        bail = True
+                        print("ERROR: Duplicate field: %s" % r_field)
 
 
             # TODO: Implement check for homogeneous SRS
@@ -773,19 +780,6 @@ def main(args):
                 region_feature = None
                 region_geom = None
 
-
-
-
-
-
-
-
-
-
-
-
-
-
                 # Loop through the region polygons, set a spatial filter
                 region_feature_counter = 0
                 num_region_features = len(region_layer)
@@ -810,33 +804,6 @@ def main(args):
                         grid_geom = grid_feature.GetGeometryRef()
                         intersecting_geom = grid_geom.Intersection(region_geom)
                         output_geom = ogr.Geometry(ogr.wkbMultiPolygon)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
                 # # Stash all the found grid cells into an in memory layer
                 # mem_driver = ogr.GetDriverByName('Memory')

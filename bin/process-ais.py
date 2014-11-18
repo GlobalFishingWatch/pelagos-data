@@ -35,15 +35,15 @@
 """
 Clip arbitrary regions to quad tree levels
 
-See pelagos_processing.cmdl.gridify for more information
+See pelagos_processing.cmdl.process_ais for more information
 """
 
 
 import sys
 
 # Convenience imports
-from pelagos_processing.cmdl.gridify import *
 from pelagos_processing.cmdl.components import *
+from pelagos_processing.cmdl.process_ais import *
 
 
 #/* ======================================================================= */#
