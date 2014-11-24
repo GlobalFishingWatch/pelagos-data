@@ -15,8 +15,4 @@
     {"type":"STRING","name":"next_gridcode"},
     {"type":"STRING","name":"region","mode":"REPEATED"},
     {"type":"STRING","name":"ocean"}
-<<<<<<< HEAD
 ]
-=======
-]
->>>>>>> 23713b621337950d0547a1c075056ae21a9cde5c
