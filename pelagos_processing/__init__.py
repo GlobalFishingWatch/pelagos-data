@@ -34,11 +34,8 @@ PelagosProcessing - Data tools for the Pelagos projects
 """
 
 
-import ais
 import common
-import grid
-import region
-from settings import __version__, __release__, __author__, __license__, __author_email__, __source__
-import utils
-#import tests
-import vessel
+import controller
+from settings import *
+import cmdl
+import tests

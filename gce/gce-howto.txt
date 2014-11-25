@@ -15,6 +15,10 @@ gcutil addinstance oceana-report-2 \
 #   --auto_delete_boot_disk \
 #   --boot_disk_type pd-standard \
 
+# TODO: Safe format and mount
+# https://cloud.google.com/compute/docs/disks#formatting
+
+
 # Choose a US central zone
 
 # OLD WAY

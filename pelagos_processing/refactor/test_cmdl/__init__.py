@@ -1,8 +1,5 @@
-#!/usr/bin/env python
-
-
-# This document is part of pelagos-data
-# https://github.com/skytruth/pelagos-data
+# This document is part of VesselInfo
+# https://github.com/skytruth/VesselInfo
 
 
 # =========================================================================== #
@@ -33,24 +30,8 @@
 
 
 """
-Clip arbitrary regions to quad tree levels
-
-See pelagos_processing.cmdl.gridify for more information
+Unittests for pelagos_processing.cmdl
 """
 
 
-import sys
-
-# Convenience imports
-from pelagos_processing.cmdl.gridify import *
-from pelagos_processing.cmdl.components import *
-
-
-#/* ======================================================================= */#
-#/*     Command line execution
-#/* ======================================================================= */#
-
-if __name__ == '__main__':
-
-    # Remove script name and give the rest to main
-    sys.exit(main(sys.argv[1:]))
+from . import test_process_ais

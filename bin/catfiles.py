@@ -33,17 +33,19 @@
 
 
 """
-Clip arbitrary regions to quad tree levels
+Concatenate input files and add an optional header
 
-See pelagos_processing.cmdl.gridify for more information
+See pelagos_processing.cmdl.cat_files for more information
 """
 
+
+from __future__ import unicode_literals
 
 import sys
 
 # Convenience imports
-from pelagos_processing.cmdl.gridify import *
 from pelagos_processing.cmdl.components import *
+from pelagos_processing.cmdl.cat_files import *
 
 
 #/* ======================================================================= */#

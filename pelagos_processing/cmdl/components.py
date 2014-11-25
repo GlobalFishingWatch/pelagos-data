@@ -34,10 +34,8 @@ Common components for all commandline utilities
 """
 
 
-import json
 from os import linesep
 from .. import settings
-import sys
 
 
 #/* ======================================================================= */#
@@ -45,14 +43,14 @@ import sys
 #/* ======================================================================= */#
 
 VERBOSE_MODE = True
-DEFAULT_STREAM = sys.stdout
+DEFAULT_STREAM = settings.STREAM
 
 
 #/* ======================================================================= */#
 #/*     Document level attributes
 #/* ======================================================================= */#
 
-__all__ = ['print_version', 'print_short_version', 'print_license', 'print_help_info', 'vprint', 'string2type']
+__all__ = ['print_version', 'print_short_version', 'print_license', 'print_help_info', 'vprint']
 
 
 #/* ======================================================================= */#
@@ -81,7 +79,8 @@ Help Flags:
     --short-version Only the version number
     --version       Version and ownership information
     --usage         Arguments, parameters, etc.
-    """)
+
+""")
 
     return 1
 
@@ -125,7 +124,7 @@ def print_short_version():
 
     global DEFAULT_STREAM
 
-    DEFAULT_STREAM.write(settings.__version__)
+    DEFAULT_STREAM.write(settings.__version__ + linesep)
 
     return 1
 
@@ -149,52 +148,10 @@ def print_version():
 
     DEFAULT_STREAM.write("""
 %s v%s released %s
-    """ % (settings.__module_name__, settings.__version__, settings.__release__))
+
+""" % (settings.__module_name__, settings.__version__, settings.__release__))
 
     return 1
-
-
-#/* ======================================================================= */#
-#/*     Define string2type() function
-#/* ======================================================================= */#
-
-def string2type(i_val):
-    
-    """
-    Convert an input string to a Python type
-
-
-    Example:
-
-        JSON: '{"woo": [1, 2, "3"]}' --> {'woo': [1, 2, '3']}
-        Integer: "1"    -->     1
-        Float: "1.23"   -->     1.23
-        None: "None"    -->     None
-        True: "True"    -->     True
-        False: "False"  -->     False
-        String: "Word"  -->     "Word"
-
-        None, True, and False are not case sensitive
-    """
-    
-    # Force value to Python type
-    try:
-        return int(i_val)
-    except ValueError:
-        try:
-            return float(i_val)
-        except ValueError:
-            if i_val.lower() == 'true':
-                return True
-            elif i_val.lower() == 'false':
-                return False
-            elif i_val.lower() == 'none':
-                return None
-            else:
-                try:
-                    return json.loads(i_val)
-                except ValueError:
-                    return i_val
 
 
 #/* ======================================================================= */#
@@ -238,12 +195,13 @@ def vprint(message, stream=DEFAULT_STREAM, flush=False):
         for line in message:
 
             # Check if line is just supposed to be a return
-            if len(line) is 0:
-                line = linesep
-            elif line[-1] != linesep:
-                line += linesep
+            if line is not None:
+                if len(line) is 0:
+                    line = linesep
+                elif line[-1] != linesep:
+                    line += linesep
 
-            o_message += line
+                o_message += line
 
         # Write to stream
         if flush:

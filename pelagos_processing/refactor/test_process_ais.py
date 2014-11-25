@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 
-# This document is part of pelagos-data
-# https://github.com/skytruth/pelagos-data
+# This document is part of VesselInfo
+# https://github.com/skytruth/VesselInfo
 
 
 # =========================================================================== #
@@ -33,24 +33,44 @@
 
 
 """
-Clip arbitrary regions to quad tree levels
-
-See pelagos_processing.cmdl.gridify for more information
+Unittests for pelagos_processing.cmdl.process_ais
 """
 
 
+import os
+from os.path import *
 import sys
+import unittest
 
-# Convenience imports
-from pelagos_processing.cmdl.gridify import *
-from pelagos_processing.cmdl.components import *
+from pelagos_processing import cmdl
+from pelagos_processing.tests import testdata
+
+
+class TestMain(unittest.TestCase):
+
+    def setUp(self):
+        self.output_test_file = '.OUTPUT-pelagos_processint_test_ProcESS_aIs.csv.ext'
+        if isfile(self.output_test_file):
+            os.remove(self.output_test_file)
+
+    def tearDown(self):
+        if isfile(self.output_test_file):
+            os.remove(self.output_test_file)
+
+    def test_standard(self):
+        arguments = ['-q', testdata.process_ais_input14, self.output_test_file]
+        exit_code = cmdl.process_ais.main(arguments)
+        self.assertEqual(0, exit_code)
+        with open(testdata.process_ais_output14, 'r') as expected_content:
+            with open(self.output_test_file, 'r') as actual_content:
+                for expected in expected_content:
+                    actual = actual_content.readline()
+                    self.assertEqual(expected, actual)
 
 
 #/* ======================================================================= */#
-#/*     Command line execution
+#/*     Command Line Execution
 #/* ======================================================================= */#
 
 if __name__ == '__main__':
-
-    # Remove script name and give the rest to main
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(unittest.main())

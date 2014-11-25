@@ -1,3 +1,6 @@
+#!/bin/bash
+
+
 # This document is part of pelagos-data
 # https://github.com/skytruth/pelagos-data
 
@@ -29,17 +32,43 @@
 # =========================================================================== #
 
 
-"""
-PelagosProcessing - Data tools for the Pelagos projects
-"""
+# Usage
+if [ -z "$1" ] || [ "$1" == "-usage" ] || [ "$1" == "--usage" ] || [ "$1" == "-help" ] || [ "$1" == "--help" ]; then
+
+    echo ""
+    echo "$(basename $0) KEY [TARGET_FILE]"
+    echo ""
+
+    exit 1
+fi
 
 
-import ais
-import common
-import grid
-import region
-from settings import __version__, __release__, __author__, __license__, __author_email__, __source__
-import utils
-import tests
-import vessel
+# Parse arguments
+KEY="$1"
+if [ -z "$2" ]; then
+    TARGET_FILE=
+else
+    TARGET_FILE="$2"
+fi
 
+
+# Make sure the target file doesn't exist
+if [ ! -z "$TARGET_FILE" ] && [ -e $"TARGET_FILE" ]; then
+    echo ""
+    echo "ERROR: Target file exists: $TARGET_FILE"
+    exit 1
+fi
+
+
+# Get the metadata value
+VALUE=$(curl -s -H "Metadata-Flavor:Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/${KEY})
+
+
+# Dump the value
+if [ ! -z "$TARGET_FILE" ]; then
+    echo "${VALUE}\n" > ${TARGET_FILE}
+else
+    printf "${VALUE}"
+fi
+
+exit 0

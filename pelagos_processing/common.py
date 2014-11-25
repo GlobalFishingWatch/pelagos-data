@@ -34,6 +34,52 @@ Objects needed by multiple modules
 """
 
 
+import json
+
+
+#/* ======================================================================= */#
+#/*     Define string2type() function
+#/* ======================================================================= */#
+
+def string2type(i_val):
+
+    """
+    Convert an input string to a Python type
+
+
+    Example:
+
+        JSON: '{"woo": [1, 2, "3"]}' --> {'woo': [1, 2, '3']}
+        Integer: "1"    -->     1
+        Float: "1.23"   -->     1.23
+        None: "None"    -->     None
+        True: "True"    -->     True
+        False: "False"  -->     False
+        String: "Word"  -->     "Word"
+
+        None, True, and False are not case sensitive
+    """
+
+    # Force value to Python type
+    try:
+        return int(i_val)
+    except ValueError:
+        try:
+            return float(i_val)
+        except ValueError:
+            if i_val.lower() == 'true':
+                return True
+            elif i_val.lower() == 'false':
+                return False
+            elif i_val.lower() == 'none':
+                return None
+            else:
+                try:
+                    return json.loads(i_val)
+                except ValueError:
+                    return i_val
+
+
 #/* ======================================================================= */#
 #/*     Define increment_stat() function
 #/* ======================================================================= */#
