@@ -38,6 +38,6 @@ def load(filename):
         for rowidx, row in enumerate(mangle(infile)):
             for colidx, col in enumerate(cols):
                 if isinstance(row[col], float):
-                    arr[colidx,rowidx] = min(1.0, abs(row[col]))
+                    arr[colidx,rowidx] = row[col]
 
     return namedArray(cols, arr)

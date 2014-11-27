@@ -7,8 +7,8 @@ import datetime
 import rolling_measures
 
 args = {
-    "maxdist": 60*60,
-    }
+    "window": 60*60
+}
 files = []
 for arg in sys.argv[1:]:
     if arg.startswith("--"):
@@ -21,7 +21,7 @@ for arg in sys.argv[1:]:
     else:
         files.append(arg)
 
-
+args['window'] = float(args['window'])
 
 def mangle(rows):
     for row in rows:
@@ -57,7 +57,7 @@ def unmangle(row):
 inkeys = ['mmsi','longitude','latitude','timestamp','score','navstat','hdg','rot','cog','sog']
 outkeys = []
 
-windowSize = datetime.timedelta(1)
+windowSize = datetime.timedelta(seconds=args['window'])
 
 def addMeasures(infile, outfile):
     with open(infile) as startIn:
@@ -87,7 +87,7 @@ def addMeasures(infile, outfile):
                 last = None
                 for end in endIn:
                     if last is None: last = end
-                    end.update({key + "_diff": end[key] - last[key] for key in diffkeys})
+                    end.update({key + "_diff": abs(end[key] - last[key]) for key in diffkeys})
 
                     stats.add(end)
                     while not start or end['timestamp'] - start['timestamp'] > windowSize:
@@ -99,6 +99,7 @@ def addMeasures(infile, outfile):
                     s['pos'] = (s['pos'] * 60) / (windowSize.total_seconds() / 60 / 60)
                     # Normalize to "normal" vessel speed
                     s['pos'] /= 17.0
+                    s['pos'] = min(1.0, s['pos'])
                     end.update(s)
                     out.writerow(unmangle(end))
                     last = end
