@@ -37,7 +37,7 @@ def mangle(rows):
         row['score'] = row['score'] / 5.0
         row['hdg'] = row['hdg'] / 360.0
         row['cog'] = row['cog'] / 360.0
-        row['sog'] = min(1.0, row['sog'] / 17.0)
+        row['sog'] = 1.0 - min(1.0, row['sog'] / 17.0)
 
         yield row
 
@@ -80,7 +80,7 @@ def addMeasures(infile, outfile):
                 startIn = iter(mangle(csv.DictReader(startIn, inkeys)))
                 endIn = iter(mangle(csv.DictReader(endIn, inkeys)))
 
-                out = csv.DictWriter(out, inkeys + diffdiffkeys + stats.fieldmap.keys(), 'ignore')
+                out = csv.DictWriter(out, inkeys + diffdiffkeys + stats.fieldmap.keys() + ["new_score"], 'ignore')
                 out.writeheader()
 
                 start = None
@@ -101,6 +101,9 @@ def addMeasures(infile, outfile):
                     s['pos'] /= 17.0
                     s['pos'] = min(1.0, s['pos'])
                     end.update(s)
+
+                    end['new_score'] = (end['cogstddev'] + end['sogstddev'] + end['sogavg']) / 3.0
+                    
                     out.writerow(unmangle(end))
                     last = end
 
