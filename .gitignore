@@ -54,3 +54,4 @@ docs/_build/
 
 # Intellij PyCharm
 .idea
+.ipynb_checkpoints
