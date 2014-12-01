@@ -5,6 +5,19 @@ import struct
 import shapely
 import pyproj
 
+strctypes = {
+    gdal.GDT_Byte: "c",
+    gdal.GDT_Float32: "f",
+    gdal.GDT_Float64: "d",
+    gdal.GDT_Int16: "h",
+    gdal.GDT_Int32: "i",
+    gdal.GDT_UInt16: "H",
+    gdal.GDT_UInt32: "I"
+}
+
+
+gdal.UseExceptions()
+
 def wktToProj(proj):
     conv = osr.SpatialReference()
     conv.ImportFromWkt(proj)
@@ -18,6 +31,9 @@ class PixelReader(object):
         self.trans = self.dataset.GetGeoTransform()
 
         self.rasterBand = self.dataset.GetRasterBand(1)
+        self.noDataValue = self.rasterBand.GetNoDataValue()
+
+
 
     def transform(self, x, y):
         # Calculates inverse of (1, x, y) = (1, p, l) * self.trans
@@ -47,17 +63,13 @@ class PixelReader(object):
         px = int(px)
         py = int(py)
 
-        # Assumes 16 bit int aka 'short'
-        structval = self.rasterBand.ReadRaster(px, py, 1, 1, buf_type=gdal.GDT_UInt16)
-        #use the 'short' format code (2 bytes) not int (4 bytes)
-        intval = struct.unpack('h' , structval)
-
-        # intval is a tuple, length=1 as we only asked for 1 pixel value
-        if intval[0] != -1:
-            print "%s,%s (%s,%s) =%s" % (lon,lat, px, py, intval[0])
-
+        structval = self.rasterBand.ReadRaster(px, py, 1, 1, buf_type=self.rasterBand.DataType)
+        val = struct.unpack(strctypes[self.rasterBand.DataType], structval)[0]
+        if val == self.noDataValue: val = None
+        return val
 
 r = PixelReader('global-distances/distance-from-port-2km/distance-from-port.tif')
 for lat in xrange(-90, 90):
     for lng in xrange(-180, 180):
-        r.read(lng, lat)
+        val = r.read(lng, lat)
+        print "%s,%s = %s" % (lng, lat, val)
