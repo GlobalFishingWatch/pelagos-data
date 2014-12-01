@@ -89,8 +89,8 @@ class Bin(object):
 
 inkeys = ['mmsi','longitude','latitude','timestamp','score','navstat','hdg','rot','cog','sog']
 
-discontinuity_time = 24
-discontinuity_speed = 50 # knots
+discontinuity_time = 72
+discontinuity_speed = 100 # knots
 
 bins = []
 current_bin = None
