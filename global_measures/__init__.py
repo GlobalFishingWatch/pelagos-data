@@ -4,6 +4,9 @@ import osr
 import struct
 import shapely
 import pyproj
+import os.path
+
+dir = os.path.abspath(os.path.split(__file__)[0])
 
 strctypes = {
     gdal.GDT_Byte: "c",
@@ -25,6 +28,12 @@ def wktToProj(proj):
 
 class PixelReader(object):
     def __init__(self, filename):
+        if not filename.startswith("/"):
+            relative = os.path.abspath(os.path.join(dir, filename))
+            if os.path.exists(relative):
+                filename = relative
+            else:
+                filename = os.path.abspath(filename)
         self.filename = filename
         self.dataset = gdal.Open(self.filename) 
         self.proj = pyproj.Proj(wktToProj(self.dataset.GetProjection()))
@@ -67,3 +76,6 @@ class PixelReader(object):
         val = struct.unpack(strctypes[self.rasterBand.DataType], structval)[0]
         if val == self.noDataValue: val = None
         return val
+
+    def close(self):
+        self.dataset.close()

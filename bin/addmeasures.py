@@ -5,6 +5,7 @@ import operator
 import itertools
 import datetime
 import rolling_measures
+import global_measures
 
 args = {
     "window": 60*60
@@ -54,8 +55,10 @@ def unmangle(row):
         res[key] = value
     return res
 
+distances_to_port = global_measures.PixelReader('distance-from-port-2km/distance-from-port.tif')
+
 inkeys = ['mmsi','longitude','latitude','timestamp','score','navstat','hdg','rot','cog','sog']
-outkeys = []
+outkeys = ["distance_to_port", "new_score"]
 
 windowSize = datetime.timedelta(seconds=args['window'])
 
@@ -80,7 +83,7 @@ def addMeasures(infile, outfile):
                 startIn = iter(mangle(csv.DictReader(startIn, inkeys)))
                 endIn = iter(mangle(csv.DictReader(endIn, inkeys)))
 
-                out = csv.DictWriter(out, inkeys + diffdiffkeys + stats.fieldmap.keys() + ["new_score"], 'ignore')
+                out = csv.DictWriter(out, inkeys + diffdiffkeys + stats.fieldmap.keys() + outkeys, 'ignore')
                 out.writeheader()
 
                 start = None
@@ -88,6 +91,8 @@ def addMeasures(infile, outfile):
                 for end in endIn:
                     if last is None: last = end
                     end.update({key + "_diff": abs(end[key] - last[key]) for key in diffkeys})
+
+                    end['distance_to_port'] = distances_to_port.read(end['longitude'], end['latitude']) / 1852.0 # Convert from meters to nautical miles 
 
                     stats.add(end)
                     while not start or end['timestamp'] - start['timestamp'] > windowSize:
